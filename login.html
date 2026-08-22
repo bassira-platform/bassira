@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تسجيل الدخول - منصة بصيرة</title>
+  <!-- خط Cairo من Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style-log.css">
+</head>
+<body>
+
+  <div class="login-container">
+    <div class="brand-header">
+      <span class="brand-badge">منصة بصيرة</span>
+      <h1>تسجيل الدخول</h1>
+      <p>أدخل بياناتك للوصول إلى لوحة التحكم</p>
+    </div>
+
+    <!-- صندوق التنبيه بالأخطاء -->
+    <div id="alertBox" class="alert-box"></div>
+
+    <form id="loginForm" action="login.php" method="POST" novalidate>
+      
+      <!-- البريد الإلكتروني أو رمز المستخدم -->
+      <div class="form-group">
+        <label for="identifier">البريد الإلكتروني أو رمز الحساب</label>
+        <div class="input-wrapper">
+          <input 
+            type="text" 
+            id="identifier" 
+            name="identifier" 
+            class="form-control" 
+            placeholder="مثال: P00001 أو example@mail.com" 
+            required
+          >
+        </div>
+      </div>
+
+      <!-- كلمة المرور -->
+      <div class="form-group">
+        <label for="password">كلمة المرور</label>
+        <div class="input-wrapper">
+          <input 
+            type="password" 
+            id="password" 
+            name="password" 
+            class="form-control" 
+            placeholder="••••••••" 
+            required
+          >
+        </div>
+      </div>
+
+      <!-- تذكرني ونسيت كلمة المرور -->
+      <div class="form-options">
+        <label class="remember-me">
+          <input type="checkbox" id="remember" name="remember">
+          تذكرني على هذا الجهاز
+        </label>
+        <a href="#" class="forgot-pass">نسيت كلمة المرور؟</a>
+      </div>
+
+      <!-- زر الدخول -->
+      <button type="submit" class="btn-submit">
+        دخول إلى الحساب 🔑
+      </button>
+
+    </form>
+
+    <div class="form-footer">
+      ليس لديك حساب بعد؟ 
+<a href="index.html#register">إنشاء حساب جديد</a>
+    </div>
+
+    <a href="index.html" class="back-home">← العودة للرئيسية</a>
+  </div>
+
+  <script src="script-log.js">
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>منصة بصيرة - الصفحة الرئيسية</title>
+  <!-- استدعاء خط Cairo -->
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style-acc.css">
+</head>
+<body>
+
+  <!-- ==================== HEADER ==================== -->
+  <header>
+    <div class="header-container">
+      <div class="logo">
+
+         <a href="#home">
+    <img src="logo.png" alt="منصة بصيرة">
+  </a>
+      </div>
+      
+      <!-- الأزرار الخمسة المستطيلة -->
+      <nav class="nav-buttons">
+        <a href="#register" class="nav-btn btn-register">انضم الينا</a>
+      <!--  <a href="#parents" class="nav-btn btn-parents">الآباء</a>
+        <a href="#kids" class="nav-btn btn-kids">الأطفال</a>
+        <a href="#specialists" class="nav-btn btn-specialists">الأخصائيين</a>-->
+        <a href="#contact" class="nav-btn btn-contact">تواصل معنا</a>
+      </nav>
+  <button id="menu-btn" class="icon-btn" aria-label="Menu">
+<img src="settings.png"> 
+</button>
+
+<!-- قائمة الإعدادات المنسدلة -->
+<div id="settings-dropdown" class="settings-dropdown hidden">
+<div class="menu-item">
+<span><i class="fas fa-globe"></i> اللغة</span>
+<select id="lang-select">
+<option value="ar">العربية</option>
+<option value="en">English</option>
+</select>
+</div>
+
+<div class="menu-item">
+<span><i class="fas fa-moon"></i> الوضع الليلي</span>
+<label class="switch">
+<input type="checkbox" id="theme-toggle">
+<span class="slider round"></span>
+</label>
+</div>
+
+<hr>
+
+
+</div>
+    </div>
+  </header>
+
+  <!-- ==================== MAIN CONTENT ==================== -->
+  <main>
+    <!-- الحاوية المحجوزة التي ستتغير مستقبلاً -->
+    <section class="dynamic-container" id="dynamic-hero">
+      
+      <span class="tag-badge">مرحباً بكم في منصة بصيرة</span>
+      
+      <h1 class="main-title">خطوتكم الأولى للفحص المبكر والرعاية التفاعلية لأطفالكم</h1>
+      
+      <p class="intro-text">
+        يسعى فريق <strong>بصيرة</strong> لمرافقة ودعم الأسر الجزائرية عبر توفير فحص مبكر وذكي لأبنائهم من خلال ألعاب تفاعلية وأدوات مبتكرة، مع إمكانية حجز مواعيد مباشرة مع نخبة من المختصين بحسب احتياج كل طفل.
+      </p>
+
+      <div class="specialties-list">
+        <span class="spec-chip spec-psych">🧠 أخصائيون نفسانيون</span>
+        <span class="spec-chip spec-ortho">🗣️ أخصائيون أرطوفونيون</span>
+        <span class="spec-chip spec-opt">👁️ أخصائيو العيون</span>
+      </div>
+
+      <p class="intro-text">
+        نضمن لكم بيئة آمنة، مريحة وتفاعلية تجمع بين الترفيه والفائدة، سواء كنتم أولياء امور تبحثون عن التوجيه السليم أو أخصائيين يرغبون في تقديم خدماتهم وتوسيع نطاق أثرهم.
+      </p>
+
+    </section>
+  </main>
+
+<script src="script-acc.js"></script>
+</body>
+</html>

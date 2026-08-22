@@ -1,0 +1,8 @@
+<<<<<<< HEAD
+# Exclude Database Connection File
+db.php
+=======
+# Exclude Database Connection File
+db.php
+>>>>>>> 21fb89c (Add user-code generation logic in php and setup production workflo)
+bassira.sql

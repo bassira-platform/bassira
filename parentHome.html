@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>صفحة رئيسية- منصة بصيرة</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="parent-style.css">
+</head>
+<body>
+
+  <!-- الهيدر الرئيسي -->
+  <header class="app-header">
+    <div class="logo-container">
+      <img src="logo.png" alt="شعار بصيرة" class="logo-img">
+      <span class="logo-text">بصيرة</span>
+    </div>
+
+    <!-- قائمة الخيارات المنسدلة -->
+    <div class="user-menu-wrapper">
+      <button id="userMenuBtn" class="icon-menu-btn" aria-label="القائمة">
+        <i class="fas fa-ellipsis-v"></i>
+      </button>
+      <div id="userDropdown" class="dropdown-content hidden">
+        <a href="#profile" class="dropdown-item"><i class="fas fa-user-circle"></i> الملف الشخصي</a>
+        <a href="#settings" class="dropdown-item"><i class="fas fa-cog"></i> الإعدادات</a>
+        <hr>
+        <a href="logout.php" class="dropdown-item logout-link"><i class="fas fa-sign-out-alt"></i> تسجيل الخروج</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- الجزء المتغير (المحتوى الرئيسي) -->
+  <main class="main-content" id="mainContent">
+    
+    <!-- تبويبات التنقل الرئيسية -->
+    <nav class="dashboard-tabs">
+      <button class="tab-btn active" data-tab="children-section">
+        <i class="fas fa-child"></i> إدارة الأطفال
+      </button>
+      <button class="tab-btn" data-tab="appointments-section">
+        <i class="fas fa-calendar-alt"></i> حجز المواعيد
+      </button>
+    </nav>
+
+    <!-- قسم 1: إدارة الأطفال -->
+    <section id="children-section" class="tab-content active">
+      
+   
+       <button class="btn-add-child-large" id="openAddChildModal">
+            <i class="fas fa-plus"></i> إضافة طفل جديد
+          </button>
+      <!-- سيتم ملؤه ديناميكياً ببطاقات الأطفال أو الواجهة الفارغة -->
+      <div id="childrenContainer" class="children-grid">
+        <!-- الحالة الفارغة (افتراضياً) -->
+        <div class="empty-state">
+          <div class="empty-icon"><i class="fas fa-baby-carriage"></i></div>
+          <h3>لا يوجد أطفال مسجلون حالياً</h3>
+          <p>قم بإضافة طفل جديد لإنشاء حساب وتحديث الملف الصحي وتتبع المواعيد.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- قسم 2: حجز المواعيد -->
+    <section id="appointments-section" class="tab-content hidden">
+      <h2>حجز المواعيد والأخصائيين</h2>
+      <p class="placeholder-text">قريباً: يمكنك حجز المواعيد واللقاءات مع الأخصائيين المعتمدين هنا.</p>
+    </section>
+
+  </main>
+
+  <!-- النافذة المنبثقة (Modal): إضافة طفل جديد -->
+  <div id="addChildModal" class="modal hidden">
+    <div class="modal-content">
+      <span class="close-modal" id="closeAddChildModal">&times;</span>
+      <h3><i class="fas fa-user-plus"></i> إضافة طفل جديد</h3>
+      <form id="addChildForm">
+        <div class="form-group">
+          <label for="childFullName">الاسم الكامل للطفل</label>
+          <input type="text" id="childFullName" name="child_name" required placeholder="أدخل اسم الطفل">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="childBirthDate">تاريخ الميلاد</label>
+            <input type="date" id="childBirthDate" name="birth_date" required>
+          </div>
+          <div class="form-group">
+            <label for="childGender">الجنس</label>
+            <select id="childGender" name="gender" required>
+              <option value="">اختر الجنس</option>
+              <option value="male">ذكر</option>
+              <option value="female">أنثى</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="childPassword">كلمة مرور حساب الطفل</label>
+          <input type="password" id="childPassword" name="child_password" required placeholder="••••••••">
+        </div>
+        <button type="submit" class="btn-submit">إنشاء الحساب وتوليد UID 🚀</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- النافذة المنبثقة (Modal): تعبئة/تحديث الملف الصحي -->
+  <div id="healthRecordModal" class="modal hidden">
+  <div class="modal-content">
+    <span class="close-btn" id="closeHealthModal">&times;</span>
+    <h3><i class="fas fa-notes-medical"></i> تحديث الملف الصحي</h3>
+    <form id="healthRecordForm">
+      <input type="hidden" id="healthChildId" name="child_id">
+
+      <div class="form-group">
+        <label>فصيلة الدم:</label>
+        <select id="bloodType" name="blood_type">
+          <option value="">غير محدد</option>
+          <option value="A+">A+</option>
+          <option value="A-">A-</option>
+          <option value="B+">B+</option>
+          <option value="B-">B-</option>
+          <option value="O+">O+</option>
+          <option value="O-">O-</option>
+          <option value="AB+">AB+</option>
+          <option value="AB-">AB-</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>الحساسيات (إن وجدت):</label>
+        <textarea id="allergies" name="allergies" placeholder="مثال: حساسية من البنسلين، أطعمة محددة..."></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>الأمراض المزمنة / ملاحظات طبية:</label>
+        <textarea id="medicalConditions" name="medical_conditions" placeholder="مثال: الربو، السكري..."></textarea>
+      </div>
+
+      <button type="submit" class="btn-primary">حفظ الملف الصحي</button>
+    </form>
+  </div>
+</div>
+<div id="editChildModal" class="modal hidden">
+  <div class="modal-content">
+    <span class="close-btn" id="closeEditChildModal">&times;</span>
+    <h3><i class="fas fa-user-edit"></i> تعديل بيانات الطفل</h3>
+    <form id="editChildForm">
+      <input type="hidden" id="editChildId" name="child_id">
+      
+      <div class="form-group">
+        <label>الاسم الكامل:</label>
+        <input type="text" id="editChildName" name="full_name" required>
+      </div>
+
+      <div class="form-group">
+        <label>تاريخ الميلاد:</label>
+        <input type="date" id="editBirthDate" name="birth_date" required>
+      </div>
+
+      <div class="form-group">
+        <label>الجنس:</label>
+        <select id="editGender" name="gender" required>
+          <option value="MALE">ذكر</option>
+          <option value="FEMALE">أنثى</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn-primary">حفظ التعديلات</button>
+    </form>
+  </div>
+</div>
+<!-- نافذة تعديل كلمة مرور الطفل -->
+<div id="editPasswordModal" class="modal hidden">
+  <div class="modal-content">
+    <span class="close-btn" onclick="document.getElementById('editPasswordModal').classList.add('hidden')">&times;</span>
+    <h3><i class="fas fa-key"></i> تعديل كلمة مرور الطفل</h3>
+    <form id="editPasswordForm">
+      <input type="hidden" id="passwordChildId" name="child_id">
+      <div class="form-group">
+        <label>كلمة المرور الجديدة:</label>
+        <input type="password" name="new_password" required minlength="4">
+      </div>
+      <button type="submit" class="btn-primary">حفظ كلمة المرور</button>
+    </form>
+  </div>
+</div>
+
+  <!-- الفوتر -->
+  <footer class="app-footer">
+    <div class="footer-links">
+      <a href="#">عن منصة بصيرة</a>
+      <a href="#">الشروط والأحكام</a>
+      <a href="#">سياسة الخصوصية</a>
+      <a href="#">الدعم الفني</a>
+    </div>
+    <p class="copyright">&copy; 2026 منصة بصيرة. جميع الحقوق محفوظة.</p>
+  </footer>
+
+  <script src="parent-script.js"></script>
+<!-- نافذة عرض وتعديل الملف الشخصي لولي الأمر -->
+<div id="parentProfileModal" class="modal hidden">
+  <div class="modal-content profile-modal-content">
+    <span class="close-btn" id="closeParentProfileModal">&times;</span>
+    <h3><i class="fas fa-user-circle"></i> الملف الشخصي لولي الأمر</h3>
+
+    <!-- نموذج عرض وتعديل البيانات -->
+    <form id="parentProfileForm" enctype="multipart/form-data">
+      
+      <!-- عرض وتغيير الصورة الشخصية -->
+      <div class="profile-avatar-wrapper">
+        <img id="parentAvatarPreview" src="default-avatar.png" alt="الصورة الشخصية" class="profile-avatar-img">
+        <label for="parentAvatarInput" class="btn-change-avatar">
+          <i class="fas fa-camera"></i> تغيير الصورة
+        </label>
+        <input type="file" id="parentAvatarInput" name="avatar" accept="image/*" class="hidden">
+      </div>
+
+      <div class="form-group">
+        <label>الاسم الكامل:</label>
+        <input type="text" id="parentFullName" name="full_name" required>
+      </div>
+
+      <div class="form-group">
+        <label>البريد الإلكتروني:</label>
+        <input type="email" id="parentEmail" name="email" required>
+      </div>
+
+      <div class="form-group">
+        <label>رقم الهاتف:</label>
+        <input type="tel" id="parentPhone" name="phone" placeholder="06XXXXXXXX">
+      </div>
+
+      <div class="form-group">
+        <label>مكان الإقامة (العنوان):</label>
+        <input type="text" id="parentAddress" name="address" placeholder="المدينة / الولاية">
+      </div>
+
+      <div class="form-group">
+        <label>كلمة المرور الجديدة (أتركها فارغة إذا لم تُرِد تغييرها):</label>
+        <input type="password" id="parentNewPassword" name="new_password" placeholder="••••••••">
+      </div>
+
+      <button type="submit" class="btn-primary">حفظ التغييرات 💾</button>
+    </form>
+  </div>
+</div>
+</body>
+</html>

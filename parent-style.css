@@ -1,0 +1,274 @@
+:root {
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --bg-body: #f8fafc;
+  --bg-card: #ffffff;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --border: #e2e8f0;
+}
+
+body {
+  font-family: 'Cairo', sans-serif;
+  background-color: var(--bg-body);
+  color: var(--text-main);
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* الهيدر */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 24px;
+  background-color: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+}
+
+.logo-container { display: flex; align-items: center; gap: 10px; }
+.logo-img { height: 40px; }
+.logo-text { font-weight: 800; font-size: 1.4rem; color: var(--primary); }
+
+.icon-menu-btn {
+  background: none; border: none; font-size: 1.2rem;
+  cursor: pointer; padding: 8px; color: var(--text-muted);
+}
+
+.dropdown-content {
+  position: absolute; left: 24px; top: 60px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 8px; width: 180px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  z-index: 100;
+}
+.dropdown-item {
+  display: block; padding: 10px 14px; color: var(--text-main);
+  text-decoration: none; font-size: 0.9rem;
+}
+.dropdown-item:hover { background: #f1f5f9; }
+.logout-link { color: #ef4444; }
+
+/* الجزء المتغير والملاحة */
+.main-content { flex: 1; padding: 24px; max-width: 1100px; margin: 0 auto; width: 100%; }
+
+.dashboard-tabs { display: flex; gap: 12px; border-bottom: 2px solid var(--border); margin-bottom: 20px; }
+.tab-btn {
+  background: none; border: none; padding: 12px 20px; font-size: 1rem;
+  font-family: inherit; cursor: pointer; color: var(--text-muted); font-weight: 600;
+}
+.tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+
+/* قسم إضافة الأثر بطاقات الأطفال */
+.section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.btn-add-child {
+  background: var(--primary); color: white; border: none;
+  padding: 8px 16px; border-radius: 6px; cursor: pointer; font-family: inherit;
+}
+
+/* الحالة الفارغة */
+.empty-state {
+  text-align: center; padding: 60px 20px; background: var(--bg-card);
+  border-radius: 12px; border: 2px dashed var(--border);
+}
+.empty-icon { font-size: 3rem; color: var(--text-muted); margin-bottom: 12px; }
+.btn-add-child-large {
+  background: var(--primary); color: white; border: none;
+  padding: 12px 24px; border-radius: 8px; cursor: pointer; margin-top: 15px; font-family: inherit;
+}
+
+/* بطاقة الطفل Child Card */
+.children-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+.child-card {
+  background: var(--bg-card); border-radius: 12px; padding: 18px;
+  border: 1px solid var(--border); position: relative; box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+.card-header { display: flex; justify-content: space-between; align-items: flex-start; }
+.child-avatar {
+  width: 50px; height: 50px; background: #e0e7ff; color: var(--primary);
+  border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
+}
+.card-settings-btn { background: none; border: none; font-size: 1rem; cursor: pointer; color: var(--text-muted); }
+
+.card-body { margin-top: 15px; }
+.card-body h4 { margin: 0 0 6px 0; font-size: 1.1rem; }
+.card-body p { margin: 4px 0; font-size: 0.88rem; color: var(--text-muted); }
+.uid-badge { background: #f1f5f9; padding: 4px 8px; border-radius: 4px; font-family: monospace; }
+
+/* النوافذ المنبثقة Modal */
+.modal { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.modal-content { background: white; padding: 24px; border-radius: 12px; width: 90%; max-width: 450px; position: relative; }
+.large-modal { max-width: 600px; }
+.close-modal { position: absolute; left: 15px; top: 15px; font-size: 1.5rem; cursor: pointer; }
+
+/* الفوتر */
+.app-footer { background: var(--bg-card); border-top: 1px solid var(--border); text-align: center; padding: 20px; margin-top: auto; }
+.footer-links { display: flex; justify-content: center; gap: 20px; margin-bottom: 10px; }
+.footer-links a { color: var(--text-muted); text-decoration: none; font-size: 0.85rem; }
+
+.hidden { display: none !important; }
+/* ==========================================
+   تنسيقات مصغرة ومتجاوبة للملف الشخصي (Profile Modal)
+   ========================================== */
+
+/* الحاوية الرئيسية للنافذة */
+.profile-modal-content {
+  max-width: 400px; /* تقليل العرض الأقصى لتبدو أصغر وألمّ */
+  width: 90%;
+  border-radius: 14px;
+  padding: 18px 22px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  background-color: #ffffff;
+  position: relative;
+  margin: auto;
+  max-height: 90vh; /* عدم تجاوز ارتفاع الشاشة */
+  overflow-y: auto; /* إضافة التمرير في الشاشات الصغيرة جداً */
+  animation: fadeInDown 0.25s ease-out;
+}
+
+/* عنوان النافذة */
+.profile-modal-content h3 {
+  font-size: 1.1rem;
+  margin-bottom: 12px;
+  color: #2c3e50;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* زر الإغلاق */
+.profile-modal-content .close-btn {
+  position: absolute;
+  top: 12px;
+  left: 15px;
+  font-size: 20px;
+  color: #95a5a6;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.profile-modal-content .close-btn:hover {
+  color: #e74c3c;
+}
+
+/* حاوية الصورة الشخصية المصغرة */
+.profile-avatar-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 8px 0 16px 0;
+}
+
+.profile-avatar-img {
+  width: 75px; /* تقليل حجم الصورة */
+  height: 75px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid #4a90e2;
+  box-shadow: 0 3px 8px rgba(74, 144, 226, 0.2);
+  background-color: #f8f9fa;
+}
+
+/* زر تغيير الصورة */
+.btn-change-avatar {
+  margin-top: 6px;
+  padding: 4px 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #4a90e2;
+  background-color: #edf4fc;
+  border: 1px dashed #4a90e2;
+  border-radius: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s ease;
+}
+
+.btn-change-avatar:hover {
+  background-color: #4a90e2;
+  color: #ffffff;
+}
+
+/* الحقول والنموذج */
+#parentProfileForm .form-group {
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: right;
+}
+
+#parentProfileForm label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #444444;
+}
+
+#parentProfileForm input {
+  width: 100%;
+  padding: 7px 10px; /* تقليل الحشو الداخلي للحقول */
+  border: 1px solid #dcdfe6;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  font-family: inherit;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+#parentProfileForm input:focus {
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.12);
+}
+
+#parentProfileForm input::placeholder {
+  font-size: 0.8rem;
+  color: #b0b8c1;
+}
+
+/* زر حفظ التغييرات */
+#parentProfileForm .btn-primary {
+  width: 100%;
+  margin-top: 8px;
+  padding: 9px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #ffffff;
+  background-color: #4a90e2;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+#parentProfileForm .btn-primary:hover {
+  background-color: #357abd;
+}
+
+/* ==========================================
+   التجاوب مع شاشات الهواتف الصغرى (Media Queries)
+   ========================================== */
+@media (max-width: 480px) {
+  .profile-modal-content {
+    width: 92%;
+    padding: 15px 16px;
+    border-radius: 12px;
+  }
+
+  .profile-avatar-img {
+    width: 65px;
+    height: 65px;
+  }
+
+  #parentProfileForm input {
+    padding: 6px 8px;
+    font-size: 0.85rem;
+  }
+
+  #parentProfileForm label {
+    font-size: 0.78rem;
+  }
+}

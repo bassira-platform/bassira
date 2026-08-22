@@ -1,0 +1,468 @@
+ :root {
+      --color-deep-slate: #264653; /* الكحلي الهادئ: النصوص والعناوين */
+      --color-soft-teal:  #2A9D8F; /* الأزرق التايل: قسم الآباء والتوازن */
+      --color-warm-gold:  #E9C46A; /* الأصفر الدافئ: قسم الأطفال والترفيه */
+      --color-soft-coral: #F4A261; /* المرجاني الناعم: زر التسجيل والتفاعل */
+      --color-off-white:  #FAF9F5; /* الأبيض الكريمي: خلفية الموقع */
+      --color-white:      #FFFFFF;
+    }
+* {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Cairo', sans-serif;
+    }
+
+    body {
+      background-color: var(--color-off-white);
+      color: var(--color-deep-slate);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+ header {
+      background-color: var(--color-white);
+      box-shadow: 0 4px 15px rgba(38, 70, 83, 0.06);
+      padding: 1rem 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .logo {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--color-deep-slate);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .logo span {
+      color: var(--color-soft-teal);
+    }
+
+    .nav-buttons {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .nav-btn {
+      padding: 0.65rem 1.25rem;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 0.95rem;
+      font-weight: 700;
+      transition: all 0.25s ease;
+      border: 2px solid transparent;
+      display: inline-block;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .btn-register {
+      background-color: var(--color-soft-coral);
+      color: var(--color-white);
+    }
+    .btn-register:hover {
+      background-color: #e78f4c;
+      box-shadow: 0 4px 12px rgba(244, 162, 97, 0.35);
+    }
+
+    .btn-parents {
+      background-color: transparent;
+      border-color: var(--color-soft-teal);
+      color: var(--color-soft-teal);
+    }
+    .btn-parents:hover {
+      background-color: var(--color-soft-teal);
+      color: var(--color-white);
+    }
+
+    .btn-kids {
+      background-color: transparent;
+      border-color: var(--color-warm-gold);
+      color: #c69418;
+    }
+    .btn-kids:hover {
+      background-color: var(--color-warm-gold);
+      color: var(--color-deep-slate);
+    }
+
+    .btn-specialists {
+      background-color: transparent;
+      border-color: var(--color-deep-slate);
+      color: var(--color-deep-slate);
+    }
+    .btn-specialists:hover {
+      background-color: var(--color-deep-slate);
+      color: var(--color-white);
+    }
+
+    .btn-contact {
+      background-color: transparent;
+      border-color: rgba(38, 70, 83, 0.2);
+      color: var(--color-deep-slate);
+    }
+    .btn-contact:hover {
+      border-color: var(--color-deep-slate);
+      background-color: rgba(38, 70, 83, 0.05);
+    }
+
+  
+    main {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 1.5rem;
+    }
+
+    .dynamic-container {
+      max-width: 850px;
+      width: 100%;
+      background: var(--color-white);
+      border-radius: 18px;
+      padding: 3.5rem 2.5rem;
+      box-shadow: 0 10px 30px rgba(38, 70, 83, 0.06);
+      border-top: 6px solid var(--color-soft-teal);
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .tag-badge {
+      display: inline-block;
+      padding: 0.4rem 1.3rem;
+      background-color: rgba(233, 196, 106, 0.25);
+      color: var(--color-deep-slate);
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-bottom: 1.5rem;
+    }
+
+    .main-title {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: var(--color-deep-slate);
+      margin-bottom: 1.5rem;
+      line-height: 1.4;
+    }
+
+    .intro-text {
+      font-size: 1.05rem;
+      line-height: 1.9;
+      color: #4a5568;
+      margin-bottom: 1.25rem;
+    }
+
+    .specialties-list {
+      display: flex;
+      justify-content: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin: 2rem 0;
+    }
+
+    .spec-chip {
+      padding: 0.4rem 1rem;
+      border-radius: 50px;
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+
+    .spec-psych {
+      background-color: rgba(42, 157, 143, 0.12);
+      color: var(--color-soft-teal);
+    }
+
+    .spec-ortho {
+      background-color: rgba(233, 196, 106, 0.25);
+      color: #a37508;
+    }
+
+    .spec-opt {
+      background-color: rgba(244, 162, 97, 0.15);
+      color: #d86d23;
+    }
+
+    .cta-button {
+      margin-top: 1rem;
+      padding: 0.85rem 2.5rem;
+      background-color: var(--color-soft-teal);
+      color: var(--color-white);
+      text-decoration: none;
+      border-radius: 8px;
+      font-size: 1.05rem;
+      font-weight: 700;
+      display: inline-block;
+      transition: all 0.25s ease;
+    }
+
+    .cta-button:hover {
+      background-color: var(--color-deep-slate);
+      transform: translateY(-2px);
+    }
+
+    @media (max-width: 768px) {
+      .header-container {
+        flex-direction: column;
+      }
+      .nav-buttons {
+        width: 100%;
+        justify-content: center;
+      }
+      .nav-btn {
+        flex: 1 1 calc(50% - 0.75rem);
+        padding: 0.5rem 0.75rem;
+        font-size: 0.85rem;
+      }
+      .main-title {
+        font-size: 1.65rem;
+      }
+      .dynamic-container {
+        padding: 2rem 1.25rem;
+      }
+    }
+
+.registration-wrapper {
+  margin-top: 1.5rem;
+  text-align: right;
+}
+
+.role-selector {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.role-tab {
+  flex: 1;
+  max-width: 220px;
+  padding: 0.85rem 1rem;
+  border: 2px solid rgba(38, 70, 83, 0.15);
+  border-radius: 12px;
+  text-align: center;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  background-color: var(--color-white);
+  color: var(--color-deep-slate);
+}
+
+.role-tab span {
+  margin-left: 0.4rem;
+}
+
+/* حالة التحديد للتبويبات باستخدام :has */
+.registration-wrapper:has(#role-parent:checked) .tab-parent {
+  border-color: var(--color-soft-teal);
+  background-color: rgba(42, 157, 143, 0.08);
+  color: var(--color-soft-teal);
+}
+
+.registration-wrapper:has(#role-specialist:checked) .tab-specialist {
+  border-color: var(--color-soft-coral);
+  background-color: rgba(244, 162, 97, 0.08);
+  color: #d86d23;
+}
+
+/* إظهار وإخفاء الحقول المخصصة */
+.role-fields {
+  display: none;
+}
+
+.registration-wrapper:has(#role-parent:checked) .parent-fields {
+  display: block;
+}
+
+.registration-wrapper:has(#role-specialist:checked) .specialist-fields {
+  display: block;
+}
+
+/* تنسيق الحقول المدخلة */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-row {
+  display: flex;
+  gap: 1rem;
+}
+
+.form-row .form-group {
+  flex: 1;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.form-group label {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--color-deep-slate);
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s ease;
+  background-color: var(--color-off-white);
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: var(--color-soft-teal);
+  background-color: var(--color-white);
+}
+
+.submit-btn {
+  width: 100%;
+  border: none;
+  cursor: pointer;
+  margin-top: 1rem;
+}
+
+@media (max-width: 600px) {
+  .form-row {
+    flex-direction: column;
+  }
+}
+
+.contact-wrapper {
+  margin-top: 1.5rem;
+  text-align: right;
+}
+
+.required-star {
+  color: #e74c3c;
+  margin-right: 2px;
+}
+
+.contact-form textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-family: 'Cairo', sans-serif;
+  font-size: 0.95rem;
+  outline: none;
+  transition: border-color 0.2s ease;
+  background-color: var(--color-off-white);
+  resize: vertical;
+}
+
+.contact-form textarea:focus {
+  border-color: var(--color-soft-teal);
+  background-color: var(--color-white);
+}
+
+.error-banner {
+  background-color: rgba(231, 76, 60, 0.1);
+  color: #c0392b;
+  border: 1px solid rgba(231, 76, 60, 0.3);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-top: 0.5rem;
+  text-align: center;
+}
+/* زر القائمة والقائمة المنسدلة */
+.icon-btn {
+background: none;
+border: none;
+font-size: 1.4rem;
+cursor: pointer;
+color: inherit;
+}
+
+.settings-dropdown {
+position: absolute;
+top: 60px;
+left: 20px; /* أو right حسب الاتجاه RTL/LTR */
+background-color: var(--bg-card, #ffffff);
+border: 1px solid #ddd;
+border-radius: 8px;
+box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+width: 220px;
+padding: 10px;
+z-index: 1000;
+}
+
+.hidden {
+display: none !important;
+}
+
+.menu-item {
+display: flex;
+justify-content: space-between;
+align-items: center;
+padding: 8px 12px;
+color: inherit;
+text-decoration: none;
+}
+
+.logout-link {
+color: #e74c3c;
+}
+
+/* تنسيق مفتاح التبديل للوضع الليلي (Toggle Switch) */
+.switch {
+position: relative;
+display: inline-block;
+width: 40px;
+height: 22px;
+}
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+position: absolute; cursor: pointer;
+top: 0; left: 0; right: 0; bottom: 0;
+background-color: #ccc; transition: .4s; border-radius: 34px;
+}
+.slider:before {
+position: absolute; content: "";
+height: 16px; width: 16px; left: 3px; bottom: 3px;
+background-color: white; transition: .4s; border-radius: 50%;
+}
+input:checked + .slider { background-color: #2196F3; }
+input:checked + .slider:before { transform: translateX(18px); }
+
+/* ألوان الوضع الليلي Basic Class */
+body.dark-theme {
+background-color: #121212;
+color: #ffffff;
+}
+body.dark-theme .settings-dropdown {
+background-color: #1e1e1e;
+border-color: #333;
+}
+ img 
+{
+height: 35px;
+width : 34px;
+ 
+}

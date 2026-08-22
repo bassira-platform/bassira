@@ -1,0 +1,39 @@
+<span class="tag-badge">تواصل معنا</span>
+<h1 class="main-title">يسعدنا الاستماع إلى استفساراتكم وانشغالاتكم</h1>
+<p class="intro-text">
+  فريق منصة <strong>بصيرة</strong> هنا لمرافقتكم. يرجى ملء كافة البيانات التالية وسنقوم بالرد على بريدكم في أقرب وقت ممكن.
+</p>
+
+<div class="contact-wrapper">
+  <form class="auth-form contact-form" id="contactForm" novalidate>
+    
+    <!-- الاسم الكامل -->
+    <div class="form-group">
+      <label for="contactName">الاسم الكامل <span class="required-star">*</span></label>
+      <input type="text" id="contactName" placeholder="أدخل اسمك الكامل" required>
+    </div>
+
+    <!-- البريد الإلكتروني والموضوع -->
+    <div class="form-row">
+      <div class="form-group">
+        <label for="contactEmail">البريد الإلكتروني <span class="required-star">*</span></label>
+        <input type="email" id="contactEmail" placeholder="example@email.com" required>
+      </div>
+      <div class="form-group">
+        <label for="contactSubject">الموضوع <span class="required-star">*</span></label>
+        <input type="text" id="contactSubject" placeholder="عنوان الرسالة" required>
+      </div>
+    </div>
+
+    <!-- نص الرسالة -->
+    <div class="form-group">
+      <label for="contactMessage">نص الرسالة <span class="required-star">*</span></label>
+      <textarea id="contactMessage" rows="5" placeholder="اكتب استفسارك بالتفصيل هنا..." required></textarea>
+    </div>
+
+    <!-- تنبيه الخطأ في حالة ترك حقل فارغ -->
+    <div id="contactError" class="error-banner" style="display: none;"></div>
+
+    <button type="submit" class="cta-button submit-btn">إرسال الرسالة ✉️</button>
+  </form>
+</div>
