@@ -80,70 +80,34 @@ document.addEventListener("DOMContentLoaded", () => {
   // 4. دالة معالجة نموذج قسم "تواصل معنا"
   // ==========================================
   function initContactForm() {
-    const form = document.getElementById("contactForm");
-    if (!form) return;
+   const formData = {
+    name: document.getElementById('name').value,
+    email: document.getElementById('email').value,
+    subject: document.getElementById('subject').value,
+    message: document.getElementById('message').value
+};
 
-    const errorBanner = document.getElementById("contactError");
-    const submitBtn = form.querySelector('button[type="submit"]');
-
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
-
-      const name = document.getElementById("contactName").value.trim();
-      const email = document.getElementById("contactEmail").value.trim();
-      const subject = document.getElementById("contactSubject").value.trim();
-      const message = document.getElementById("contactMessage").value.trim();
-
-      if (!name || !email || !subject || !message) {
-        errorBanner.textContent = "⚠️ يرجى ملء جميع الخانات المطلوبة قبل الإرسال.";
-        errorBanner.style.display = "block";
-        return;
-      }
-
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        errorBanner.textContent = "⚠️ يرجى إدخال بريد إلكتروني صحيح.";
-        errorBanner.style.display = "block";
-        return;
-      }
-
-      errorBanner.style.display = "none";
-      submitBtn.disabled = true;
-      submitBtn.textContent = "جاري الإرسال...";
-
-      try {
-        const response = await fetch("https://api.web3forms.com/submit", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Accept: "application/json",
-          },
-          body: JSON.stringify({
-            access_key: "c44b9a98-c970-4412-a942-3a8df59ac52e",
-            name: name,
-            email: email,
-            subject: `[منصة بصيرة] ${subject}`,
-            message: message,
-          }),
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-          alert("✅ تم إرسال رسالتك بنجاح إلى فريق منصة بصيرة! وسنتواصل معك قريباً.");
-          form.reset();
-        } else {
-          throw new Error(result.message);
-        }
-      } catch (error) {
-        console.error("خطأ الإرسال:", error);
-        errorBanner.textContent = "❌ حدث خطأ أثناء إرسال الرسالة، يرجى المحاولة لاحقاً.";
-        errorBanner.style.display = "block";
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = "إرسال الرسالة ✉️";
-      }
-    });
+fetch('contact.php', {
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(formData)
+})
+.then(response => response.json())
+.then(data => {
+    if (data.success) {
+        alert(data.message);
+        // إعادة ضبط النموذج
+        document.getElementById('contactForm').reset();
+    } else {
+        alert('خطأ: ' + data.message);
+    }
+})
+.catch(error => {
+    console.error('Error:', error);
+    alert('حدث خطأ في الاتصال بالسيرفر.');
+});
   }
 
   // ==========================================
