@@ -1,6 +1,22 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+<script>
+  // إخفاء الشاشة فوراً لمنع التطفل Visual Flashing
+  document.documentElement.style.display = 'none';
+
+  fetch('check_auth.php')
+    .then(res => res.json())
+    .then(data => {
+      // إذا حاول أخصائي أو زائر بدون جلسة فتح الصفحة يدوياً من الشريط يتم طرده فوراً
+      if (!data.allowed || data.user_type !== 'PARENT') {
+        window.location.href = data.redirect || 'login.html';
+      } else {
+        document.documentElement.style.display = '';
+      }
+    })
+    .catch(() => { window.location.href = 'login.html'; });
+</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>صفحة رئيسية- منصة بصيرة</title>
