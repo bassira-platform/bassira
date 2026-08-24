@@ -1,20 +1,23 @@
 document.addEventListener("DOMContentLoaded", () => {
-  // العناصر الرئيسية للمودال
+  // العناصر والمودالات الثلاثة
   const forgotModal = document.getElementById("forgotPasswordModal");
+  const otpModal = document.getElementById("otpModal");
   const resetModal = document.getElementById("resetPasswordModal");
+
   const openForgotBtn = document.getElementById("openForgotPassword");
   const closeForgotModal = document.getElementById("closeForgotModal");
+  const closeOtpModal = document.getElementById("closeOtpModal");
   const closeResetModal = document.getElementById("closeResetModal");
 
   const forgotForm = document.getElementById("forgotPasswordForm");
   const resetForm = document.getElementById("resetPasswordForm");
   const otpFields = document.querySelectorAll(".otp-field");
+  const otpStatus = document.getElementById("otpStatus");
 
-  let currentEmail = ""; // لتخزين بريد المستخدم مؤقتاً
+  let currentEmail = "";
+  let verifiedOTP = "";
 
-  // ==========================================
-  // 1. إظهار وإخفاء النوافذ المنبثقة
-  // ==========================================
+  // 1. فتح وإغلاق النوافذ
   if (openForgotBtn) {
     openForgotBtn.addEventListener("click", (e) => {
       e.preventDefault();
@@ -22,27 +25,17 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  if (closeForgotModal) {
-    closeForgotModal.addEventListener("click", () => {
-      forgotModal.style.display = "none";
-    });
-  }
+  if (closeForgotModal) closeForgotModal.onclick = () => forgotModal.style.display = "none";
+  if (closeOtpModal) closeOtpModal.onclick = () => otpModal.style.display = "none";
+  if (closeResetModal) closeResetModal.onclick = () => resetModal.style.display = "none";
 
-  if (closeResetModal) {
-    closeResetModal.addEventListener("click", () => {
-      resetModal.style.display = "none";
-    });
-  }
-
-  // إغلاق المودال عند الضغط خارجه
-  window.addEventListener("click", (e) => {
+  window.onclick = (e) => {
     if (e.target === forgotModal) forgotModal.style.display = "none";
+    if (e.target === otpModal) otpModal.style.display = "none";
     if (e.target === resetModal) resetModal.style.display = "none";
-  });
+  };
 
-  // ==========================================
-  // 2. إرسال طلب رمز التحقق (OTP)
-  // ==========================================
+  // 2. إرسال البريد للحصول على الرمز
   if (forgotForm) {
     forgotForm.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -56,7 +49,7 @@ document.addEventListener("DOMContentLoaded", () => {
       btnSend.textContent = "جاري إرسال الرمز... ⏳";
 
       try {
-        const response = await fetch("send_otp.php", {
+        const response = await fetch("send_reset_otp.php", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email: currentEmail })
@@ -66,7 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (result.success) {
           forgotModal.style.display = "none";
-          resetModal.style.display = "flex";
+          otpModal.style.display = "flex";
           if (otpFields[0]) otpFields[0].focus();
         } else {
           alert("❌ " + (result.message || "تعذر إرسال الرمز."));
@@ -80,11 +73,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ==========================================
-  // 3. التحكم الذكي بخانات OTP (6 خانات)
-  // ==========================================
+  // 3. التنقل الذكي داخل خانات الـ OTP والتحقق الفوري تلقائياً
   otpFields.forEach((field, index) => {
-    // التنقل للأمام عند كتابة رقم
     field.addEventListener("input", (e) => {
       const val = e.target.value;
       if (val.length === 1 && index < otpFields.length - 1) {
@@ -93,14 +83,12 @@ document.addEventListener("DOMContentLoaded", () => {
       checkAndVerifyOTP();
     });
 
-    // الرجوع للخلف عند الضغط على Backspace
     field.addEventListener("keydown", (e) => {
       if (e.key === "Backspace" && !field.value && index > 0) {
         otpFields[index - 1].focus();
       }
     });
 
-    // دعم اللصق المباشر (Paste)
     field.addEventListener("paste", (e) => {
       e.preventDefault();
       const pastedData = e.clipboardData.getData("text").trim();
@@ -114,31 +102,51 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // دالة تجميع الرمز والتأكد من إكتمال 6 أرقام
-  function checkAndVerifyOTP() {
+  // دالة التحقق التلقائي عند إدخال الرقم السادس
+  async function checkAndVerifyOTP() {
     let code = "";
     otpFields.forEach((f) => (code += f.value));
 
     if (code.length === 6) {
-      // إبراز الخانات باللون الأخضر للإشارة لاكتمال الرقم
-      otpFields.forEach((f) => (f.style.borderColor = "#27ae60"));
+      otpStatus.style.color = "#0d9488";
+      otpStatus.textContent = "جاري التحقق من الرمز... ⏳";
+
+      try {
+        const response = await fetch("verify_otp.php", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: currentEmail, otp_code: code })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          verifiedOTP = code;
+          otpStatus.style.color = "#27ae60";
+          otpStatus.textContent = "✅ الرمز صحيح!";
+          
+          setTimeout(() => {
+            otpModal.style.display = "none";
+            resetModal.style.display = "flex";
+            otpStatus.textContent = "";
+          }, 800);
+        } else {
+          otpStatus.style.color = "#dc2626";
+          otpStatus.textContent = "❌ الرمز غير صحيح أو انتهت صلاحيته.";
+        }
+      } catch (err) {
+        otpStatus.style.color = "#dc2626";
+        otpStatus.textContent = "❌ تعذر الاتصال بالسيرفر للتحقق.";
+      }
+    } else {
+      otpStatus.textContent = "";
     }
   }
 
-  // ==========================================
-  // 4. إرسال كلمة المرور الجديدة مع الرمز
-  // ==========================================
+  // 4. حفظ كلمة المرور الجديدة
   if (resetForm) {
     resetForm.addEventListener("submit", async (e) => {
       e.preventDefault();
-
-      let otpCode = "";
-      otpFields.forEach((f) => (otpCode += f.value));
-
-      if (otpCode.length !== 6) {
-        alert("⚠️ يرجى إدخال رمز التحقق المكون من 6 أرقام كاملاً.");
-        return;
-      }
 
       const newPassword = document.getElementById("newPassword").value;
       const confirmNewPassword = document.getElementById("confirmNewPassword").value;
@@ -150,7 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const btnReset = document.getElementById("btnResetPassword");
       btnReset.disabled = true;
-      btnReset.textContent = "جاري تحديث كلمة المرور... ⏳";
+      btnReset.textContent = "جاري حفظ كلمة المرور... ⏳";
 
       try {
         const response = await fetch("reset_password.php", {
@@ -158,7 +166,7 @@ document.addEventListener("DOMContentLoaded", () => {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             email: currentEmail,
-            otp_code: otpCode,
+            otp_code: verifiedOTP,
             new_password: newPassword
           })
         });
@@ -166,14 +174,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const result = await response.json();
 
         if (result.success) {
-          alert("✅ تم تغيير كلمة المرور بنجاح! يمكنك الآن تسجيل الدخول.");
+          alert("✅ تم تغيير كلمة المرور بنجاح! يمكنك تسجيل الدخول الآن.");
           resetModal.style.display = "none";
           resetForm.reset();
           forgotForm.reset();
-          otpFields.forEach((f) => {
-            f.value = "";
-            f.style.borderColor = "#bdc3c7";
-          });
+          otpFields.forEach((f) => (f.value = ""));
         } else {
           alert("❌ " + (result.message || "حدث خطأ أثناء التحديث."));
         }
@@ -181,7 +186,7 @@ document.addEventListener("DOMContentLoaded", () => {
         alert("❌ تعذر الاتصال بالسيرفر لتحديث كلمة المرور.");
       } finally {
         btnReset.disabled = false;
-        btnReset.textContent = "تحديث كلمة المرور 🚀";
+        btnReset.textContent = "حفظ كلمة المرور 🚀";
       }
     });
   }

@@ -99,14 +99,13 @@
   </div>
 </div>
 
-<!-- 2. نافذة الـ OTP المكونة من 6 خانات وكلمة المرور الجديدة -->
-<div id="resetPasswordModal" class="modal-overlay" style="display: none;">
+<!-- 2. نافذة إدخال والتحقق من الرمز (OTP Only) -->
+<div id="otpModal" class="modal-overlay" style="display: none;">
   <div class="modal-card">
-    <span class="close-modal" id="closeResetModal">&times;</span>
-    <h3>تغيير كلمة المرور 🔑</h3>
-    <p>أدخل رمز التحقق المكون من 6 أرقام:</p>
+    <span class="close-modal" id="closeOtpModal">&times;</span>
+    <h3>تأكيد رمز التحقق 🔢</h3>
+    <p>أدخل الرمز المكون من 6 أرقام المرسل إلى بريدك:</p>
     
-    <!-- حقول OTP المقسمة -->
     <div class="otp-container" dir="ltr">
       <input type="text" maxlength="1" class="otp-field" pattern="\d*" inputmode="numeric" />
       <input type="text" maxlength="1" class="otp-field" pattern="\d*" inputmode="numeric" />
@@ -115,16 +114,26 @@
       <input type="text" maxlength="1" class="otp-field" pattern="\d*" inputmode="numeric" />
       <input type="text" maxlength="1" class="otp-field" pattern="\d*" inputmode="numeric" />
     </div>
+    
+    <div id="otpStatus" style="margin-top: 10px; font-size: 0.9rem; font-weight: 600;"></div>
+  </div>
+</div>
 
-    <!-- نموذج كلمة المرور الجديدة -->
-    <form id="resetPasswordForm" style="margin-top: 1.5rem;">
+<!-- 3. نافذة تعيين كلمة المرور الجديدة (تظهر بعد نجاح الرمز) -->
+<div id="resetPasswordModal" class="modal-overlay" style="display: none;">
+  <div class="modal-card">
+    <span class="close-modal" id="closeResetModal">&times;</span>
+    <h3>كلمة المرور الجديدة 🔑</h3>
+    <p>أدخل كلمة المرور الجديدة لحسابك:</p>
+    
+    <form id="resetPasswordForm">
       <div class="input-group">
         <input type="password" id="newPassword" placeholder="كلمة المرور الجديدة" required />
       </div>
       <div class="input-group">
         <input type="password" id="confirmNewPassword" placeholder="تأكيد كلمة المرور الجديدة" required />
       </div>
-      <button type="submit" id="btnResetPassword" class="btn-primary">تحديث كلمة المرور 🚀</button>
+      <button type="submit" id="btnResetPassword" class="btn-primary">حفظ كلمة المرور 🚀</button>
     </form>
   </div>
 </div>
