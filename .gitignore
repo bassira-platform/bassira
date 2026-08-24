@@ -7,3 +7,6 @@ bassira-API.txt
 
 # OTP Scripts
 send_otp.php
+
+#FILE API
+contact.php
