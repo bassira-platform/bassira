@@ -1,8 +1,9 @@
-<<<<<<< HEAD
 # Exclude Database Connection File
 db.php
-=======
-# Exclude Database Connection File
-db.php
->>>>>>> 21fb89c (Add user-code generation logic in php and setup production workflo)
+
+# SQL and documentation files
 bassira.sql
+bassira-API.txt
+
+# OTP Scripts
+send_otp.php
