@@ -1,7 +1,6 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
 
-// تضمين ملف الاتصال بقاعدة البيانات
 require_once 'db.php';
 
 $data = json_decode(file_get_contents("php://input"), true);
@@ -25,7 +24,7 @@ if ($result->num_rows === 0) {
     exit;
 }
 
-// 2. تحديث كلمة المرور المشفّرة بـ BCRYPT في جدول users
+// 2. تحديث كلمة المرور بـ BCRYPT في جدول users
 $hashed_password = password_hash($new_password, PASSWORD_BCRYPT);
 $updateStmt = $conn->prepare("UPDATE users SET password = ? WHERE email = ?");
 $updateStmt->bind_param("ss", $hashed_password, $email);
@@ -42,3 +41,4 @@ if ($updateStmt->execute()) {
 }
 
 $conn->close();
+?>

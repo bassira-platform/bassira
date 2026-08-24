@@ -1,7 +1,6 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
 
-// تضمين ملف الاتصال بقاعدة البيانات
 require_once 'db.php';
 
 $data = json_decode(file_get_contents("php://input"), true);
@@ -25,4 +24,6 @@ if ($result->num_rows > 0) {
     echo json_encode(['success' => false, 'message' => 'الرمز غير صحيح أو انتهت صلاحيته.']);
 }
 
+$stmt->close();
 $conn->close();
+?>
