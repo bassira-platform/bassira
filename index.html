@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
+    <script>
+  // فحص الكوكيز والجلسة فقط عند دخول الصفحة الرئيسية للموقع
+  fetch('check_session.php')
+    .then(res => res.json())
+    .then(data => {
+      if (data.logged_in && data.redirect) {
+        window.location.href = data.redirect;
+      }
+    })
+    .catch(() => {});
+</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>منصة بصيرة - الصفحة الرئيسية</title>

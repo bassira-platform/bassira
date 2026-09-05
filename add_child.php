@@ -4,29 +4,43 @@ header('Content-Type: application/json; charset=utf-8');
 session_start();
 require_once 'db.php';
 
-// التأكد من تسجيل دخول الأب
-if (!isset($_SESSION['logged_in']) || $_SESSION['user_id'] === null) {
+// 1. جلب معرف المستخدم أو رمزه من الجلسة
+$user_code_or_id = $_SESSION['user_code'] ?? $_SESSION['user_id'] ?? null;
+
+if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true || empty($user_code_or_id)) {
     echo json_encode(['status' => 'error', 'message' => 'غير مصرح بالوصول']);
     exit();
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $parent_id  = $_SESSION['user_id'];
     $child_name = trim($_POST['child_name'] ?? '');
     $birth_date = trim($_POST['birth_date'] ?? '');
     $gender     = trim($_POST['gender'] ?? '');
     $password   = $_POST['child_password'] ?? '';
 
     if (empty($child_name) || empty($birth_date) || empty($gender) || empty($password)) {
-        echo json_encode(['status' => 'error', 'message' => 'يرجى ملء جميع الحقول المطلوب']);
+        echo json_encode(['status' => 'error', 'message' => 'يرجى ملء جميع الحقول المطلوبة']);
         exit();
     }
 
     try {
-        // توليد الـ UID التلقائي (مثال: C-8F9A2B)
+        // 2. البحث عن قيمة id الرقمية الصحيحة لولي الأمر من جدول users
+        $stmtUser = $pdo->prepare("SELECT id FROM users WHERE user_code = ? OR id = ? LIMIT 1");
+        $stmtUser->execute([$user_code_or_id, $user_code_or_id]);
+        $userRow = $stmtUser->fetch(PDO::FETCH_ASSOC);
+
+        if (!$userRow) {
+            echo json_encode(['status' => 'error', 'message' => 'حساب ولي الأمر غير موجود في قاعدة البيانات']);
+            exit();
+        }
+
+        $parent_id = $userRow['id']; // استخدام الرقم التعريفي الصحيح المقترن بـ FOREIGN KEY
+
+        // 3. توليد UID وتشفير كلمة المرور
         $uid = 'C-' . strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 6));
         $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
+        // 4. إدراج بيانات الطفل
         $sql = "INSERT INTO children (parent_id, uid, full_name, birth_date, gender, password) 
                 VALUES (?, ?, ?, ?, ?, ?)";
         
@@ -34,9 +48,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->execute([$parent_id, $uid, $child_name, $birth_date, $gender, $hashed_password]);
 
         echo json_encode([
-            'status' => 'success',
+            'status'  => 'success',
             'message' => 'تم إنشاء حساب الطفل بنجاح',
-            'uid' => $uid
+            'uid'     => $uid
         ]);
         exit();
 
@@ -45,3 +59,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit();
     }
 }
+?>
