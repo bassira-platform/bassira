@@ -12,9 +12,3 @@ send_reset_otp.php
 #FILE API
 contact.php
 
-#FILES LOGIN 
-login.php
-login.html
-check_session.php
-logout.php
-script_log.js
