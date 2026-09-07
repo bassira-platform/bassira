@@ -49,11 +49,21 @@
     <div class="form-row">
       <div class="form-group">
         <label for="password">كلمة المرور</label>
-        <input type="password" id="password" name="password" placeholder="••••••••" required>
+        <div class="input-wrapper">
+  <input type="password" id="password" placeholder="كلمة المرور" required />
+  <button type="button" class="toggle-password" data-target="password" aria-label="عرض كلمة المرور">
+    <i class="fa-solid fa-eye"></i>
+  </button>
+</div>
       </div>
       <div class="form-group">
         <label for="confirmPassword">تأكيد كلمة المرور</label>
-        <input type="password" id="confirmPassword" name="confirmPassword" placeholder="••••••••" required>
+        <div class="input-wrapper">
+  <input type="password" id="confirmPassword" placeholder="تأكيد كلمة المرور" required />
+  <button type="button" class="toggle-password" data-target="confirmPassword" aria-label="عرض كلمة المرور">
+    <i class="fa-solid fa-eye"></i>
+  </button>
+</div>
       </div>
     </div>
 
