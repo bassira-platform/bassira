@@ -75,75 +75,82 @@ document.addEventListener("DOMContentLoaded", () => {
       document.body.classList.toggle("dark-theme", themeToggle.checked);
     });
   }
+// ==========================================
+// 4. دالة معالجة نموذج قسم "تواصل معنا"
+// ==========================================
+function initContactForm() {
+  const form = document.getElementById("contactForm");
+  if (!form) return;
 
-  // ==========================================
-  // 4. دالة معالجة نموذج قسم "تواصل معنا"
-  // ==========================================
-  function initContactForm() {
-    const form = document.getElementById("contactForm");
-    if (!form) return;
+  const errorBanner = document.getElementById("contactError");
+  const submitBtn = form.querySelector('button[type="submit"]');
 
-    const errorBanner = document.getElementById("contactError");
-    const submitBtn = form.querySelector('button[type="submit"]');
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
 
-    form.addEventListener("submit", async (e) => {
-      e.preventDefault();
+    const name = document.getElementById("contactName").value.trim();
+    const email = document.getElementById("contactEmail").value.trim();
+    const subject = document.getElementById("contactSubject").value.trim();
+    const message = document.getElementById("contactMessage").value.trim();
 
-      const name = document.getElementById("contactName").value.trim();
-      const email = document.getElementById("contactEmail").value.trim();
-      const subject = document.getElementById("contactSubject").value.trim();
-      const message = document.getElementById("contactMessage").value.trim();
+    // التحقق من الحقول الفارغة
+    if (!name || !email || !subject || !message) {
+      showError("⚠️ يرجى ملء جميع الخانات المطلوبة قبل الإرسال.");
+      return;
+    }
 
-      if (!name || !email || !subject || !message) {
-        errorBanner.textContent = "⚠️ يرجى ملء جميع الخانات المطلوبة قبل الإرسال.";
-        errorBanner.style.display = "block";
-        return;
+    // التحقق من صحة البريد
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      showError("⚠️ يرجى إدخال بريد إلكتروني صحيح.");
+      return;
+    }
+
+    hideError();
+    setSubmitting(true);
+
+    try {
+      const response = await fetch("contact.php", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json",
+        },
+        body: JSON.stringify({ name, email, subject, message }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        alert("✅ تم إرسال رسالتك بنجاح إلى فريق منصة بصيرة! وسنتواصل معك قريباً.");
+        form.reset();
+      } else {
+        throw new Error(result.message || "حدث خطأ غير متوقع أثناء الإرسال.");
       }
+    } catch (error) {
+      console.error("خطأ الإرسال:", error);
+      showError(`❌ ${error.message || "حدث خطأ أثناء إرسال الرسالة، يرجى المحاولة لاحقاً."}`);
+    } finally {
+      setSubmitting(false);
+    }
+  });
 
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(email)) {
-        errorBanner.textContent = "⚠️ يرجى إدخال بريد إلكتروني صحيح.";
-        errorBanner.style.display = "block";
-        return;
-      }
-
-      errorBanner.style.display = "none";
-      submitBtn.disabled = true;
-      submitBtn.textContent = "جاري الإرسال...";
-
-      try {
-        const response = await fetch("contact.php", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-          },
-          body: JSON.stringify({
-            name: name,
-            email: email,
-            subject: subject,
-            message: message,
-          }),
-        });
-
-        const result = await response.json();
-
-        if (result.success) {
-          alert("✅ تم إرسال رسالتك بنجاح إلى فريق منصة بصيرة! وسنتواصل معك قريباً.");
-          form.reset();
-        } else {
-          throw new Error(result.message);
-        }
-      } catch (error) {
-        console.error("خطأ الإرسال:", error);
-        errorBanner.textContent = `❌ ${error.message || "حدث خطأ أثناء إرسال الرسالة، يرجى المحاولة لاحقاً."}`;
-        errorBanner.style.display = "block";
-      } finally {
-        submitBtn.disabled = false;
-        submitBtn.textContent = "إرسال الرسالة ✉️";
-      }
-    });
+  // دوال مساعدة لتبسيط الكود
+  function showError(msg) {
+    errorBanner.textContent = msg;
+    errorBanner.style.display = "block";
   }
+
+  function hideError() {
+    errorBanner.style.display = "none";
+    errorBanner.textContent = "";
+  }
+
+  function setSubmitting(isSubmitting) {
+    submitBtn.disabled = isSubmitting;
+    submitBtn.textContent = isSubmitting ? "جاري الإرسال..." : "إرسال الرسالة ✉️";
+  }
+}
 
   // ==========================================
   // 5. دالة تهيئة وتحقق نموذج التسجيل
