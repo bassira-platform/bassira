@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================
   async function checkAuthSession() {
     try {
-      const res = await fetch('check_session.php');
+      const res = await fetch('get_parent_profile.php');
       
       if (!res.ok) {
         handleLogoutRedirect();
