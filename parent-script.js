@@ -24,7 +24,10 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       const result = await res.json();
-      if (result.status !== 'success') {
+      
+      // التعديل هنا: التوافق مع استجابة logged_in أو status
+      const isLoggedIn = result.logged_in === true || result.status === 'success';
+      if (!isLoggedIn) {
         handleLogoutRedirect();
         return false;
       }
