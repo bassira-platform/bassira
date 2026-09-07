@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>صفحة رئيسية- منصة بصيرة</title>
@@ -24,7 +23,7 @@
         <i class="fas fa-ellipsis-v"></i>
       </button>
       <div id="userDropdown" class="dropdown-content hidden">
-        <a href="#profile" class="dropdown-item"><i class="fas fa-user-circle"></i> الملف الشخصي</a>
+        <a href="#profile" class="dropdown-item" id="openProfileBtn"><i class="fas fa-user-circle"></i> الملف الشخصي</a>
         <a href="#settings" class="dropdown-item"><i class="fas fa-cog"></i> الإعدادات</a>
         <hr>
         <a href="logout.php" class="dropdown-item logout-link"><i class="fas fa-sign-out-alt"></i> تسجيل الخروج</a>
@@ -47,11 +46,10 @@
 
     <!-- قسم 1: إدارة الأطفال -->
     <section id="children-section" class="tab-content active">
+      <button class="btn-add-child-large" id="openAddChildModal">
+        <i class="fas fa-plus"></i> إضافة طفل جديد
+      </button>
       
-   
-       <button class="btn-add-child-large" id="openAddChildModal">
-            <i class="fas fa-plus"></i> إضافة طفل جديد
-          </button>
       <!-- سيتم ملؤه ديناميكياً ببطاقات الأطفال أو الواجهة الفارغة -->
       <div id="childrenContainer" class="children-grid">
         <!-- الحالة الفارغة (افتراضياً) -->
@@ -71,7 +69,7 @@
 
   </main>
 
-  <!-- النافذة المنبثقة (Modal): إضافة طفل جديد -->
+  <!-- النافذة المنبثقة 1: إضافة طفل جديد -->
   <div id="addChildModal" class="modal hidden">
     <div class="modal-content">
       <span class="close-modal" id="closeAddChildModal">&times;</span>
@@ -98,105 +96,156 @@
         <div class="form-group">
           <label for="childPassword">كلمة مرور حساب الطفل</label>
           <div class="input-wrapper">
-  <input type="password" id="childPassword" placeholder="كلمة المرور للطفل" required />
-  <button type="button" class="toggle-password" data-target="childPassword" aria-label="عرض كلمة المرور">
-    <i class="fa-solid fa-eye"></i>
-  </button>
-</div>
+            <input type="password" id="childPassword" name="child_password" placeholder="كلمة المرور للطفل" required />
+            <button type="button" class="toggle-password" data-target="childPassword" aria-label="عرض كلمة المرور">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </div>
         </div>
         <button type="submit" class="btn-submit">إنشاء الحساب وتوليد UID 🚀</button>
       </form>
     </div>
   </div>
 
-  <!-- النافذة المنبثقة (Modal): تعبئة/تحديث الملف الصحي -->
+  <!-- النافذة المنبثقة 2: تعبئة/تحديث الملف الصحي -->
   <div id="healthRecordModal" class="modal hidden">
-  <div class="modal-content">
-    <span class="close-btn" id="closeHealthModal">&times;</span>
-    <h3><i class="fas fa-notes-medical"></i> تحديث الملف الصحي</h3>
-    <form id="healthRecordForm">
-      <input type="hidden" id="healthChildId" name="child_id">
+    <div class="modal-content">
+      <span class="close-btn" id="closeHealthModal">&times;</span>
+      <h3><i class="fas fa-notes-medical"></i> تحديث الملف الصحي</h3>
+      <form id="healthRecordForm">
+        <input type="hidden" id="healthChildId" name="child_id">
 
-      <div class="form-group">
-        <label>فصيلة الدم:</label>
-        <select id="bloodType" name="blood_type">
-          <option value="">غير محدد</option>
-          <option value="A+">A+</option>
-          <option value="A-">A-</option>
-          <option value="B+">B+</option>
-          <option value="B-">B-</option>
-          <option value="O+">O+</option>
-          <option value="O-">O-</option>
-          <option value="AB+">AB+</option>
-          <option value="AB-">AB-</option>
-        </select>
-      </div>
+        <div class="form-group">
+          <label>فصيلة الدم:</label>
+          <select id="bloodType" name="blood_type">
+            <option value="">غير محدد</option>
+            <option value="A+">A+</option>
+            <option value="A-">A-</option>
+            <option value="B+">B+</option>
+            <option value="B-">B-</option>
+            <option value="O+">O+</option>
+            <option value="O-">O-</option>
+            <option value="AB+">AB+</option>
+            <option value="AB-">AB-</option>
+          </select>
+        </div>
 
-      <div class="form-group">
-        <label>الحساسيات (إن وجدت):</label>
-        <textarea id="allergies" name="allergies" placeholder="مثال: حساسية من البنسلين، أطعمة محددة..."></textarea>
-      </div>
+        <div class="form-group">
+          <label>الحساسيات (إن وجدت):</label>
+          <textarea id="allergies" name="allergies" placeholder="مثال: حساسية من البنسلين، أطعمة محددة..."></textarea>
+        </div>
 
-      <div class="form-group">
-        <label>الأمراض المزمنة / ملاحظات طبية:</label>
-        <textarea id="medicalConditions" name="medical_conditions" placeholder="مثال: الربو، السكري..."></textarea>
-      </div>
+        <div class="form-group">
+          <label>الأمراض المزمنة / ملاحظات طبية:</label>
+          <textarea id="medicalConditions" name="medical_conditions" placeholder="مثال: الربو، السكري..."></textarea>
+        </div>
 
-      <button type="submit" class="btn-primary">حفظ الملف الصحي</button>
-    </form>
+        <button type="submit" class="btn-primary">حفظ الملف الصحي</button>
+      </form>
+    </div>
   </div>
-</div>
-<div id="editChildModal" class="modal hidden">
-  <div class="modal-content">
-    <span class="close-btn" id="closeEditChildModal">&times;</span>
-    <h3><i class="fas fa-user-edit"></i> تعديل بيانات الطفل</h3>
-    <form id="editChildForm">
-      <input type="hidden" id="editChildId" name="child_id">
-      
-      <div class="form-group">
-        <label>الاسم الكامل:</label>
-        <input type="text" id="editChildName" name="full_name" required>
-      </div>
 
-      <div class="form-group">
-        <label>تاريخ الميلاد:</label>
-        <input type="date" id="editBirthDate" name="birth_date" required>
-      </div>
+  <!-- النافذة المنبثقة 3: تعديل بيانات الطفل -->
+  <div id="editChildModal" class="modal hidden">
+    <div class="modal-content">
+      <span class="close-btn" id="closeEditChildModal">&times;</span>
+      <h3><i class="fas fa-user-edit"></i> تعديل بيانات الطفل</h3>
+      <form id="editChildForm">
+        <input type="hidden" id="editChildId" name="child_id">
+        
+        <div class="form-group">
+          <label>الاسم الكامل:</label>
+          <input type="text" id="editChildName" name="full_name" required>
+        </div>
 
-      <div class="form-group">
-        <label>الجنس:</label>
-        <select id="editGender" name="gender" required>
-          <option value="MALE">ذكر</option>
-          <option value="FEMALE">أنثى</option>
-        </select>
-      </div>
+        <div class="form-group">
+          <label>تاريخ الميلاد:</label>
+          <input type="date" id="editBirthDate" name="birth_date" required>
+        </div>
 
-      <button type="submit" class="btn-primary">حفظ التعديلات</button>
-    </form>
+        <div class="form-group">
+          <label>الجنس:</label>
+          <select id="editGender" name="gender" required>
+            <option value="MALE">ذكر</option>
+            <option value="FEMALE">أنثى</option>
+          </select>
+        </div>
+
+        <button type="submit" class="btn-primary">حفظ التعديلات</button>
+      </form>
+    </div>
   </div>
-</div>
-<!-- نافذة تعديل كلمة مرور الطفل -->
-<div id="editPasswordModal" class="modal hidden">
-  <div class="modal-content">
-    <span class="close-btn" onclick="document.getElementById('editPasswordModal').classList.add('hidden')">&times;</span>
-    <h3><i class="fas fa-key"></i> تعديل كلمة مرور الطفل</h3>
-    <form id="editPasswordForm">
-      <input type="hidden" id="passwordChildId" name="child_id">
-      <div class="form-group">
-        <label>كلمة المرور الجديدة:</label>
-        <div class="input-wrapper">
-  <input type="password" id="parentNewPassword" placeholder="كلمة المرور الجديدة" />
- <div class="input-wrapper">
-  <input type="password" id="childPassword" placeholder="كلمة المرور للطفل" required />
-  <button type="button" class="toggle-password" data-target="childPassword" aria-label="عرض كلمة المرور">
-    <i class="fa-solid fa-eye"></i>
-  </button>
-</div>
-      </div>
-      <button type="submit" class="btn-primary">حفظ كلمة المرور</button>
-    </form>
+
+  <!-- النافذة المنبثقة 4: تعديل كلمة مرور الطفل -->
+  <div id="editPasswordModal" class="modal hidden">
+    <div class="modal-content">
+      <span class="close-btn" id="closeEditPasswordModal">&times;</span>
+      <h3><i class="fas fa-key"></i> تعديل كلمة مرور الطفل</h3>
+      <form id="editPasswordForm">
+        <input type="hidden" id="passwordChildId" name="child_id">
+        <div class="form-group">
+          <label for="childEditPasswordInput">كلمة المرور الجديدة للطفل:</label>
+          <div class="input-wrapper">
+            <input type="password" id="childEditPasswordInput" name="new_password" placeholder="كلمة المرور الجديدة" required />
+            <button type="button" class="toggle-password" data-target="childEditPasswordInput" aria-label="عرض كلمة المرور">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+        <button type="submit" class="btn-primary">حفظ كلمة المرور</button>
+      </form>
+    </div>
   </div>
-</div>
+
+  <!-- النافذة المنبثقة 5: الملف الشخصي لولي الأمر -->
+  <div id="parentProfileModal" class="modal hidden">
+    <div class="modal-content profile-modal-content">
+      <span class="close-btn" id="closeParentProfileModal">&times;</span>
+      <h3><i class="fas fa-user-circle"></i> الملف الشخصي لولي الأمر</h3>
+
+      <form id="parentProfileForm" enctype="multipart/form-data">
+        <div class="profile-avatar-wrapper">
+          <img id="parentAvatarPreview" src="default-avatar.png" alt="الصورة الشخصية" class="profile-avatar-img">
+          <label for="parentAvatarInput" class="btn-change-avatar">
+            <i class="fas fa-camera"></i> تغيير الصورة
+          </label>
+          <input type="file" id="parentAvatarInput" name="avatar" accept="image/*" class="hidden">
+        </div>
+
+        <div class="form-group">
+          <label for="parentFullName">الاسم الكامل:</label>
+          <input type="text" id="parentFullName" name="full_name" required>
+        </div>
+
+        <div class="form-group">
+          <label for="parentEmail">البريد الإلكتروني:</label>
+          <input type="email" id="parentEmail" name="email" required>
+        </div>
+
+        <div class="form-group">
+          <label for="parentPhone">رقم الهاتف:</label>
+          <input type="tel" id="parentPhone" name="phone" placeholder="06XXXXXXXX">
+        </div>
+
+        <div class="form-group">
+          <label for="parentAddress">مكان الإقامة (العنوان):</label>
+          <input type="text" id="parentAddress" name="address" placeholder="المدينة / الولاية">
+        </div>
+
+        <div class="form-group">
+          <label for="parentNewPassword">كلمة المرور الجديدة (أتركها فارغة إذا لم تُرِد تغييرها):</label>
+          <div class="input-wrapper">
+            <input type="password" id="parentNewPassword" name="new_password" placeholder="كلمة المرور الجديدة" />
+            <button type="button" class="toggle-password" data-target="parentNewPassword" aria-label="عرض كلمة المرور">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary">حفظ التغييرات 💾</button>
+      </form>
+    </div>
+  </div>
 
   <!-- الفوتر -->
   <footer class="app-footer">
@@ -209,60 +258,9 @@
     <p class="copyright">&copy; 2026 منصة بصيرة. جميع الحقوق محفوظة.</p>
   </footer>
 
+  <!-- السكربتات البرمجية -->
   <script src="parent-script.js"></script>
- <script src="showPass_script.js"></script>
+  <script src="showPass_script.js"></script>
   
-<!-- نافذة عرض وتعديل الملف الشخصي لولي الأمر -->
-<div id="parentProfileModal" class="modal hidden">
-  <div class="modal-content profile-modal-content">
-    <span class="close-btn" id="closeParentProfileModal">&times;</span>
-    <h3><i class="fas fa-user-circle"></i> الملف الشخصي لولي الأمر</h3>
-
-    <!-- نموذج عرض وتعديل البيانات -->
-    <form id="parentProfileForm" enctype="multipart/form-data">
-      
-      <!-- عرض وتغيير الصورة الشخصية -->
-      <div class="profile-avatar-wrapper">
-        <img id="parentAvatarPreview" src="default-avatar.png" alt="الصورة الشخصية" class="profile-avatar-img">
-        <label for="parentAvatarInput" class="btn-change-avatar">
-          <i class="fas fa-camera"></i> تغيير الصورة
-        </label>
-        <input type="file" id="parentAvatarInput" name="avatar" accept="image/*" class="hidden">
-      </div>
-
-      <div class="form-group">
-        <label>الاسم الكامل:</label>
-        <input type="text" id="parentFullName" name="full_name" required>
-      </div>
-
-      <div class="form-group">
-        <label>البريد الإلكتروني:</label>
-        <input type="email" id="parentEmail" name="email" required>
-      </div>
-
-      <div class="form-group">
-        <label>رقم الهاتف:</label>
-        <input type="tel" id="parentPhone" name="phone" placeholder="06XXXXXXXX">
-      </div>
-
-      <div class="form-group">
-        <label>مكان الإقامة (العنوان):</label>
-        <input type="text" id="parentAddress" name="address" placeholder="المدينة / الولاية">
-      </div>
-
-      <div class="form-group">
-        <label>كلمة المرور الجديدة (أتركها فارغة إذا لم تُرِد تغييرها):</label>
-        <div class="input-wrapper">
-  <input type="password" id="parentNewPassword" placeholder="كلمة المرور الجديدة" />
-  <button type="button" class="toggle-password" data-target="parentNewPassword" aria-label="عرض كلمة المرور">
-    <i class="fa-solid fa-eye"></i>
-  </button>
-</div>
-      </div>
-
-      <button type="submit" class="btn-primary">حفظ التغييرات 💾</button>
-    </form>
-  </div>
-</div>
 </body>
 </html>
