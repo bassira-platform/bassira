@@ -12,7 +12,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // 1. استدعاء ملف الاتصال بقاعدة البيانات
-require_once __DIR__ . 'db.php';
+require_once 'db.php';
 
 try {
     // 2. استقبال بيانات JSON المرسلة من الجافاسكريبت
