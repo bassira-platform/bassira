@@ -12,3 +12,5 @@ send_reset_otp.php
 #FILE API
 contact.php
 
+# استثناء مجلد الأدمن من الرفع إلى غيتهاب
+admin/
