@@ -17,8 +17,8 @@ try {
     $parentCode   = $_SESSION['user_code'];
     $specialistId = $_POST['specialist_id'] ?? null;
     $childId      = $_POST['child_id'] ?? null;
-    $bookingDate  = $_POST['booking_date'] ?? null;
-    $bookingTime  = $_POST['booking_time'] ?? null;
+$bookingDate  = $_POST['booking_date'] ?? $_POST['appointment_date'] ?? null;
+$bookingTime  = $_POST['booking_time'] ?? $_POST['appointment_time'] ?? null;
     $notes        = trim($_POST['notes'] ?? '');
 
     if (!$specialistId || !$childId || !$bookingDate || !$bookingTime) {

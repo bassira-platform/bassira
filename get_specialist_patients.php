@@ -20,12 +20,18 @@ try {
     }
 
     // جلب الأطفال الذين لديهم حجوزات مع هذا الأخصائي مع معلومات سجلهم الصحي
-    $sql = "SELECT DISTINCT c.id, c.full_name, c.birth_date, c.gender, c.uid,
-                   hr.blood_type, hr.allergies, hr.medical_conditions
-            FROM children c
-            INNER JOIN appointments a ON c.id = a.child_id
-            LEFT JOIN health_records hr ON c.id = hr.child_id
-            WHERE a.specialist_id = ?";
+  $sql = "SELECT DISTINCT c.id, 
+                        c.full_name, 
+                        c.birth_date, 
+                        c.gender, 
+                        c.uid,
+                        hr.blood_type, 
+                        hr.allergies, 
+                        hr.medical_conditions
+        FROM children c
+        INNER JOIN appointments a ON c.id = a.child_id
+        LEFT JOIN health_records hr ON c.id = hr.child_id
+        WHERE a.specialist_id = ?";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$specRow['id']]);

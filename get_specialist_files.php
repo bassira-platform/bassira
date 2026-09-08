@@ -22,21 +22,26 @@ try {
     }
 
     // جلب المستندات الطبية المحفوظة برقم الطفل المتابَع لدى هذا الأخصائي
-    $sql = "SELECT mf.id, mf.child_id, mf.file_title, mf.file_path, mf.file_type, mf.created_at,
-                   c.full_name AS child_name
-            FROM medical_files mf
-            INNER JOIN children c ON mf.child_id = c.id
-            INNER JOIN appointments a ON c.id = a.child_id
-            WHERE a.specialist_id = ?";
+   $sql = "SELECT mf.id, 
+               mf.child_id, 
+               mf.file_title, 
+               mf.file_path, 
+               mf.file_type, 
+               mf.created_at,
+               c.full_name AS child_name
+        FROM medical_files mf
+        INNER JOIN appointments a ON mf.appointment_id = a.id
+        INNER JOIN children c ON a.child_id = c.id
+        WHERE a.specialist_id = ?";
 
-    $params = [$specRow['id']];
+$params = [$specRow['id']];
 
-    if ($child_id && $child_id !== 'all') {
-        $sql .= " AND mf.child_id = ?";
-        $params[] = $child_id;
-    }
+if ($child_id && $child_id !== 'all') {
+    $sql .= " AND a.child_id = ?";
+    $params[] = $child_id;
+}
 
-    $sql .= " GROUP BY mf.id ORDER BY mf.id DESC";
+$sql .= " GROUP BY mf.id ORDER BY mf.id DESC";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);

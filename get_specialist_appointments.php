@@ -21,14 +21,22 @@ try {
     }
 
     // 2. جلب الحجوزات المرتبطة بالأخصائي مع بيانات الطفل وولي الأمر
-    $sql = "SELECT a.id, a.booking_date, a.booking_time, a.status, a.notes,
-                   c.id AS child_id, c.full_name AS child_name, c.birth_date, c.gender,
-                   u.full_name AS parent_name, u.phone AS parent_phone
-            FROM appointments a
-            JOIN children c ON a.child_id = c.id
-            JOIN users u ON c.parent_id = u.id
-            WHERE a.specialist_id = ?
-            ORDER BY a.booking_date DESC, a.booking_time DESC";
+    $sql = "SELECT a.id, 
+               a.appointment_date AS booking_date, 
+               a.appointment_time AS booking_time, 
+               a.status, 
+               a.notes,
+               c.id AS child_id, 
+               c.full_name AS child_name, 
+               c.birth_date, 
+               c.gender,
+               u.full_name AS parent_name, 
+               u.phone AS parent_phone
+        FROM appointments a
+        JOIN children c ON a.child_id = c.id
+        JOIN users u ON c.parent_id = u.id
+        WHERE a.specialist_id = ?
+        ORDER BY a.appointment_date DESC, a.appointment_time DESC";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute([$specRow['id']]);
