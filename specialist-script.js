@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // --- 2. إدارة القائمة المنسدلة للمستخدم (User Dropdown Menu) ---
+  // --- 2. إدارة القائمة المنسدلة للمستخدم ---
   const userMenuBtn = document.getElementById('userMenuBtn');
   const userDropdown = document.getElementById('userDropdown');
 
@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // --- 3. وظائف فتح وإغلاق النوافذ المنبثقة (Modal Utility Functions) ---
+  // --- 3. وظائف فتح وإغلاق النوافذ المنبثقة ---
   function openModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) modal.classList.remove('hidden');
@@ -45,7 +45,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (modal) modal.classList.add('hidden');
   }
 
-  // ربط أزرار فتح وإغلاق الملف الشخصي للأخصائي
   const openSpecialistProfileBtn = document.getElementById('openSpecialistProfileBtn');
   const closeSpecialistProfileModal = document.getElementById('closeSpecialistProfileModal');
 
@@ -62,13 +61,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // --- 4. جلب معلومات الأخصائي تلقائياً من السيرفر عند تحميل الصفحة ---
+  // --- 4. جلب معلومات الأخصائي عند تحميل الصفحة ---
   function loadSpecialistProfile() {
     fetch('api.php?action=get_profile')
       .then(res => res.json())
       .then(res => {
-        if (res.status === 'success') {
-          const data = res.data;
+        if (res.status === 'success' || res.success) {
+          const data = res.data || res;
           
           const fullNameInput = document.getElementById('specFullName');
           const specialtyInput = document.getElementById('specSpecialty');
@@ -77,9 +76,9 @@ document.addEventListener('DOMContentLoaded', () => {
           const avatarPreview = document.getElementById('specialistAvatarPreview');
 
           if (fullNameInput) fullNameInput.value = data.full_name || '';
-          if (specialtyInput) specialtyInput.value = data.specialist_type || '';
+          if (specialtyInput) specialtyInput.value = data.specialist_type || data.specialty || '';
           if (phoneInput) phoneInput.value = data.phone || '';
-          if (clinicAddressInput) clinicAddressInput.value = data.address || '';
+          if (clinicAddressInput) clinicAddressInput.value = data.clinic_address || data.address || '';
           if (avatarPreview && data.avatar) {
             avatarPreview.src = data.avatar;
           }
@@ -88,54 +87,65 @@ document.addEventListener('DOMContentLoaded', () => {
       .catch(err => console.error('خطأ في جلب بيانات الأخصائي:', err));
   }
 
-  // --- 5. جلب التقارير والملفات الطبية المرفقة تلقائياً من قاعدة البيانات ---
-  function loadMedicalFiles() {
-    const container = document.getElementById('medicalFilesContainer');
-    if (!container) return;
+  // --- 5. حفظ التغييرات للملف المهني (POST via AJAX) ---
+  const specialistProfileForm = document.getElementById('specialistProfileForm');
+  if (specialistProfileForm) {
+    specialistProfileForm.addEventListener('submit', async (e) => {
+      e.preventDefault(); // منع إرسال النموذج واستدعاء رابط GET
 
-    fetch('api.php?action=get_medical_files')
-      .then(res => res.json())
-      .then(res => {
-        if (res.status === 'success' && res.data.length > 0) {
-          container.innerHTML = ''; // تفريغ العناصر الافتراضية
+      const formData = new FormData(specialistProfileForm);
+      const submitBtn = specialistProfileForm.querySelector('button[type="submit"]');
+      
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'جاري حفظ التعديلات... ⏳';
+      }
 
-          res.data.forEach(file => {
-            const isPdf = file.file_type === 'pdf';
-            const iconClass = isPdf ? 'pdf' : 'image';
-            const icon = isPdf ? 'fa-file-pdf' : 'fa-file-image';
+      try {
+        const response = await fetch('update_specialist_profile.php', {
+          method: 'POST',
+          body: formData
+        });
 
-            const cardHTML = `
-              <div class="file-card" data-file="${file.file_path}" data-type="${file.file_type}">
-                <div class="file-type-icon ${iconClass}">
-                  <i class="fas ${icon}"></i>
-                </div>
-                <div class="file-details">
-                  <h4>${file.file_title}</h4>
-                  <p><strong>الطفل:</strong> ${file.child_name}</p>
-                  <p><strong>ولي الأمر:</strong> ${file.parent_name}</p>
-                  <span class="file-date"><i class="fas fa-calendar-day"></i> ${file.created_at.split(' ')[0]}</span>
-                </div>
-                <div class="file-actions">
-                  <a href="#" class="btn-action view-btn" title="معاينة الملف"><i class="fas fa-eye"></i> معاينة</a>
-                  <a href="${file.file_path}" download class="btn-action download-btn" title="تحميل الملف"><i class="fas fa-download"></i></a>
-                </div>
-              </div>
-            `;
-            container.insertAdjacentHTML('beforeend', cardHTML);
-          });
+        const result = await response.json();
+
+        if (result.success || result.status === 'success') {
+          alert('✅ تم حفظ التغييرات المهنية بنجاح!');
+          closeModal('specialistProfileModal');
+          loadSpecialistProfile(); // إعادة تحميل البيانات المحدثة
         } else {
-          container.innerHTML = `
-            <div class="empty-state">
-              <div class="empty-icon"><i class="fas fa-folder-open"></i></div>
-              <h3>لا توجد ملفات مرفقة حالياً</h3>
-              <p>ستظهر هنا المستندات والتقارير المرفقة تلقائياً من أولياء الأمور عند طلب الكشف.</p>
-            </div>`;
+          alert('❌ ' + (result.message || 'تعذر حفظ التغييرات.'));
         }
-      })
-      .catch(err => console.error('خطأ في جلب الملفات الطبية:', err));
+      } catch (err) {
+        console.error('خطأ الحفظ:', err);
+        alert('❌ حدث خطأ أثناء الاتصال بالسيرفر لحفظ التغييرات.');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'حفظ التغييرات المهنية 💾';
+        }
+      }
+    });
   }
 
-  // --- 6. معاينة التقارير والملفات الطبية (PDF / Images) ---
+  // --- 6. معاينة صورة الملف الشخصي عند الاختيار ---
+  const specialistAvatarInput = document.getElementById('specialistAvatarInput');
+  const specialistAvatarPreview = document.getElementById('specialistAvatarPreview');
+
+  if (specialistAvatarInput && specialistAvatarPreview) {
+    specialistAvatarInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          specialistAvatarPreview.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+  }
+
+  // --- 7. معاينة التقارير والملفات الطبية ---
   const closeViewFileModal = document.getElementById('closeViewFileModal');
   const filePreviewContainer = document.getElementById('filePreviewContainer');
   const modalFileTitle = document.getElementById('modalFileTitle');
@@ -154,7 +164,6 @@ document.addEventListener('DOMContentLoaded', () => {
         modalFileTitle.innerHTML = `<i class="fas fa-file-medical"></i> معاينة: ${fileName}`;
       }
       
-      // إدراج الملف داخل الحاوية حسب نوعه (PDF أو الصورة)
       if (filePreviewContainer) {
         if (fileType === 'pdf') {
           filePreviewContainer.innerHTML = `<iframe src="${fileUrl}" width="100%" height="500px" style="border:none;"></iframe>`;
@@ -174,24 +183,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // --- 7. معاينة صورة الملف الشخصي للأخصائي عند الاختيار ---
-  const specialistAvatarInput = document.getElementById('specialistAvatarInput');
-  const specialistAvatarPreview = document.getElementById('specialistAvatarPreview');
-
-  if (specialistAvatarInput && specialistAvatarPreview) {
-    specialistAvatarInput.addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = (event) => {
-          specialistAvatarPreview.src = event.target.result;
-        };
-        reader.readAsDataURL(file);
-      }
-    });
-  }
-
-  // --- 8. إغلاق أية نافذة منبثقة عند الضغط خارج صندوق المحتوى ---
+  // --- 8. إغلاق النوافذ عند النقر خارجها ---
   window.addEventListener('click', (e) => {
     if (e.target.classList.contains('modal')) {
       e.target.classList.add('hidden');
@@ -203,6 +195,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // تشغيل الاستعلامات الذاتية
   loadSpecialistProfile();
-  loadMedicalFiles();
 
 });

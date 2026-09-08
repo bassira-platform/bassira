@@ -394,50 +394,77 @@ function initRegisterForm() {
   }
 
   async function handleOtpClick(e) {
-    // التحقق مما إذا كان العنصر المضغوط عليه هو زر تأكيد الـ OTP
-    if (e.target && e.target.id === "btnVerifyOtp") {
-      e.preventDefault();
-      e.stopPropagation();
+  // التحقق مما إذا كان العنصر المضغوط عليه هو زر تأكيد الـ OTP
+  if (e.target && e.target.id === "btnVerifyOtp") {
+    e.preventDefault();
+    e.stopPropagation();
 
-      const otpModal = document.getElementById("otpModal");
-      const otpInput = document.getElementById("otpInput");
-      const btnVerifyOtp = e.target;
+    const otpModal = document.getElementById("otpModal");
+    const otpInput = document.getElementById("otpInput");
+    const btnVerifyOtp = e.target;
 
-      const otpCode = otpInput ? otpInput.value.trim() : "";
-      const email = document.getElementById("regEmail") ? document.getElementById("regEmail").value.trim() : "";
+    const otpCode = otpInput ? otpInput.value.trim() : "";
+    const email = document.getElementById("regEmail") ? document.getElementById("regEmail").value.trim() : "";
 
-      if (!otpCode || otpCode.length !== 6) {
-        alert("⚠️ يرجى إدخال رمز التحقق المكون من 6 أرقام.");
-        return;
+    if (!otpCode || otpCode.length !== 6) {
+      alert("⚠️ يرجى إدخال رمز التحقق المكون من 6 أرقام.");
+      return;
+    }
+
+    btnVerifyOtp.disabled = true;
+    btnVerifyOtp.textContent = "جاري التحقق... ⏳";
+
+    try {
+      const fullName = document.getElementById("fullName") ? document.getElementById("fullName").value.trim() : "";
+      const phone = document.getElementById("phone") ? document.getElementById("phone").value.trim() : "";
+      const password = document.getElementById("password") ? document.getElementById("password").value : "";
+      const roleSpecialist = document.getElementById("role-specialist");
+      const role = (roleSpecialist && roleSpecialist.checked) ? "SPECIALIST" : "PARENT";
+      
+      // جلب التخصص بغض النظر عن ID القائمة المنسدلة
+      const specialtySelect = document.getElementById("specialty") || document.getElementById("specialist_type");
+      const specialty = (role === "SPECIALIST" && specialtySelect) ? specialtySelect.value : null;
+
+      const response = await fetch("register.php", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify({
+          email: email,
+          otp_code: otpCode,
+          full_name: fullName,
+          phone: phone,
+          password: password,
+          user_type: role,          // تمرير user_type المتوافق مع ملف PHP
+          role: role,               // احتياطي للأدوار
+          specialist_type: specialty, // المفتاح الأصلي لملف PHP
+          specialty: specialty      // مفتاح احتياطي
+        })
+      });
+
+      const result = await response.json();
+
+      if (result.success || result.status === "success") {
+        alert("✅ تم إنشاء الحساب بنجاح!");
+        if (otpModal) otpModal.classList.add("hidden");
+        
+        // التوجيه بناءً على نوع المستخدم
+        window.location.href = role === "SPECIALIST" ? "specialist-dashboard.php" : "parent-dashboard.php";
+      } else {
+        alert("❌ " + (result.message || "فشل التحقق من رمز OTP."));
       }
 
-      btnVerifyOtp.disabled = true;
-      btnVerifyOtp.textContent = "جاري التحقق... ⏳";
-
-      try {
-        const fullName = document.getElementById("fullName").value.trim();
-        const phone = document.getElementById("phone").value.trim();
-        const password = document.getElementById("password").value;
-        const roleSpecialist = document.getElementById("role-specialist");
-        const role = (roleSpecialist && roleSpecialist.checked) ? "SPECIALIST" : "PARENT";
-        const specialty = document.getElementById("specialty") ? document.getElementById("specialty").value : null;
-
-        const response = await fetch("register.php", {
-          method: "POST",
-          headers: { 
-            "Content-Type": "application/json",
-            "Accept": "application/json"
-          },
-          body: JSON.stringify({
-            email: email,
-            otp_code: otpCode,
-            full_name: fullName,
-            phone: phone,
-            password: password,
-            role: role,
-            specialty: specialty
-          })
-        });
+    } catch (error) {
+      console.error("خطأ أثناء الاتصال بالخادم:", error);
+      alert("❌ حدث خطأ في الاتصال بالخادم، يرجى المحاولة لاحقاً.");
+    } finally {
+      btnVerifyOtp.disabled = false;
+      btnVerifyOtp.textContent = "تأكيد الرمز 🔓";
+    }
+  }
+}
 
         const result = await response.json();
 
