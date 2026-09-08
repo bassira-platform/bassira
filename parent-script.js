@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
     closeParentProfileModal.onclick = () => parentProfileModal.classList.add('hidden');
   }
 
-  // معاينة الصورة الشخصية
+  // معاينة الصورة الشخصية للأب
   const parentAvatarInput = document.getElementById('parentAvatarInput');
   if (parentAvatarInput) {
     parentAvatarInput.addEventListener('change', function() {
@@ -159,6 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const addChildModal = document.getElementById('addChildModal');
   const editChildModal = document.getElementById('editChildModal');
   const healthRecordModal = document.getElementById('healthRecordModal');
+  const bookingModal = document.getElementById('bookingModal');
 
   const openAddBtn = document.getElementById('openAddChildModal');
   if (openAddBtn && addChildModal) openAddBtn.onclick = () => addChildModal.classList.remove('hidden');
@@ -178,6 +179,11 @@ document.addEventListener('DOMContentLoaded', () => {
       const pwdModal = document.getElementById('editPasswordModal');
       if (pwdModal) pwdModal.classList.add('hidden');
     };
+  }
+
+  const closeBookingBtn = document.getElementById('closeBookingModal');
+  if (closeBookingBtn && bookingModal) {
+    closeBookingBtn.onclick = () => bookingModal.classList.add('hidden');
   }
 
   // ==========================================
@@ -234,26 +240,33 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================
-  // 6. نموذج حفظ الملف الصحي
+  // 6. نموذج حفظ الملف الصحي (يدعم رفع الملفات الاختيارية)
   // ==========================================
   const healthRecordForm = document.getElementById('healthRecordForm');
   if (healthRecordForm) {
     healthRecordForm.addEventListener('submit', async function(e) {
       e.preventDefault();
+      const formData = new FormData(this); // يشمل النص والملفات المرفقة تلقائياً
+
       try {
-        const res = await fetch('save_health_record.php', { method: 'POST', body: new FormData(this) });
+        const res = await fetch('save_health_record.php', { 
+          method: 'POST', 
+          body: formData 
+        });
+        
         if (res.status === 401) { handleLogoutRedirect(); return; }
         if (!res.ok) throw new Error('خطأ استجابة السيرفر');
 
         const result = await res.json();
         if (result.status === 'success') {
-          alert('✅ تم حفظ الملف الصحي بنجاح');
+          alert('✅ تم حفظ الملف الصحي والمستند الطبي بنجاح');
           if (healthRecordModal) healthRecordModal.classList.add('hidden');
+          this.reset();
         } else {
           alert('⚠️ ' + result.message);
         }
       } catch (err) {
-        alert('⚠️ تعذر حفظ الملف الصحي');
+        alert('⚠️ تعذر حفظ الملف الصحي، يرجى المحاولة لاحقاً');
       }
     });
   }
@@ -286,7 +299,38 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ==========================================
-  // 8. جلب وعرض البطاقات
+  // 8. نموذج حجز موعد
+  // ==========================================
+  const bookingForm = document.getElementById('bookingForm');
+  if (bookingForm) {
+    bookingForm.addEventListener('submit', async function(e) {
+      e.preventDefault();
+      try {
+        const res = await fetch('book_appointment.php', {
+          method: 'POST',
+          body: new FormData(this)
+        });
+
+        if (res.status === 401) { handleLogoutRedirect(); return; }
+        if (!res.ok) throw new Error('خطأ في استجابة السيرفر');
+
+        const result = await res.json();
+
+        if (result.status === 'success') {
+          alert('✅ تم إرسال طلب الحجز بنجاح');
+          if (bookingModal) bookingModal.classList.add('hidden');
+          this.reset();
+        } else {
+          alert('⚠️ ' + (result.message || 'فشل إتمام الحجز'));
+        }
+      } catch (err) {
+        alert('⚠️ تعذر الاتصال بالسيرفر لإتمام الحجز');
+      }
+    });
+  }
+
+  // ==========================================
+  // 9. جلب وعرض البطاقات
   // ==========================================
   async function loadChildrenCards() {
     const container = document.getElementById('childrenContainer');
@@ -520,7 +564,7 @@ async function openParentProfile() {
 }
 
 // ==========================================
-// 9. جلب وعرض الأخصائيين المتاحين والفلاتر
+// 10. جلب وعرض الأخصائيين المتاحين والفلاتر
 // ==========================================
 let filtersInitialized = false;
 
