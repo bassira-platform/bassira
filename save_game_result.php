@@ -7,7 +7,7 @@ header("Access-Control-Allow-Methods: POST");
 $host = "sql213.infinityfree.com";
 $db_name = "if0_42720560_bassira";
 $username = "if0_42720560"; // اسم المستخدم الخاص بـ InfinityFree
-$password = "Bassir2026"; 
+$password = "Bassira2026"; 
 
 try {
     $conn = new PDO("mysql:host=" . $host . ";dbname=" . $db_name . ";charset=utf8mb4", $username, $password);
