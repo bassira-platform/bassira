@@ -1,15 +1,17 @@
-document.addEventListener('DOMContentLoaded', () => {
+// ==========================================
+// دالة مساعدة لحماية المدخلات من ثغرات XSS (نطاق عام Global)
+// ==========================================
+function escapeHtml(text) {
+  if (!text) return '';
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
-  // دالة مساعدة لحماية المدخلات من ثغرات XSS عند الحقن في HTML
-  function escapeHtml(text) {
-    if (!text) return '';
-    return String(text)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  }
+document.addEventListener('DOMContentLoaded', () => {
 
   // ==========================================
   // 0. التحقق الاستباقي والآمن من صلاحية الجلسة
@@ -143,6 +145,11 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.classList.add('active');
       const targetTab = document.getElementById(btn.dataset.tab);
       if (targetTab) targetTab.classList.remove('hidden');
+
+      // تشغيل جلب الأخصائيين فور الانتقال لتبويب المواعيد
+      if (btn.dataset.tab === 'appointments-section') {
+        loadSpecialists();
+      }
     });
   });
 
@@ -348,6 +355,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   window.loadChildrenCards = loadChildrenCards;
   loadChildrenCards();
+
+  // ربط عناصر الفلترة بعد تحميل العناصر
+  ['filterSpecialty', 'filterAddress', 'filterSort'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', loadSpecialists);
+  });
 });
 
 // ==========================================
@@ -357,7 +370,6 @@ document.addEventListener('DOMContentLoaded', () => {
 function toggleCardOptions(event, childId) {
   if (event) event.stopPropagation();
   
-  // إغلاق أي قائمة مفتوحة مسبقاً
   document.querySelectorAll('[id^="cardOptions-"]').forEach(el => {
     if (el.id !== `cardOptions-${childId}`) el.classList.add('hidden');
   });
@@ -520,7 +532,6 @@ async function loadSpecialists() {
   const address = document.getElementById('filterAddress')?.value || '';
   const sort = document.getElementById('filterSort')?.value || 'asc';
 
-  // بناء رابط الاستعلام مع الفلاتر
   const queryParams = new URLSearchParams({
     specialty: specialty,
     address: address,
@@ -529,7 +540,7 @@ async function loadSpecialists() {
 
   try {
     const res = await fetch(`get_specialists.php?${queryParams.toString()}`);
-    if (res.status === 401) { handleLogoutRedirect(); return; }
+    if (res.status === 401) { window.location.replace('login.html'); return; }
     if (!res.ok) throw new Error('خطأ في الشبكة');
 
     const result = await res.json();
@@ -539,7 +550,6 @@ async function loadSpecialists() {
       return;
     }
 
-    // 1. تعبئة القوائم المنسدلة للفلترة لمرة واحدة فقط
     if (!filtersInitialized && result.filters) {
       populateFilterOptions('filterSpecialty', result.filters.specialties, 'value', 'label');
       populateFilterOptions('filterAddress', result.filters.addresses);
@@ -548,7 +558,6 @@ async function loadSpecialists() {
 
     const specialists = result.specialists || [];
 
-    // 2. حالة عدم وجود أخصائيين
     if (specialists.length === 0) {
       container.innerHTML = `
         <div class="empty-state">
@@ -559,7 +568,6 @@ async function loadSpecialists() {
       return;
     }
 
-    // 3. عرض بطاقات الأخصائيين
     container.innerHTML = '';
     specialists.forEach(spec => {
       const card = document.createElement('div');
@@ -594,7 +602,6 @@ async function loadSpecialists() {
   }
 }
 
-// دالة مساعدة لتعبئة خيارات الفلترة
 function populateFilterOptions(selectId, items, valueKey = null, labelKey = null) {
   const select = document.getElementById(selectId);
   if (!select || !Array.isArray(items)) return;
@@ -611,23 +618,6 @@ function populateFilterOptions(selectId, items, valueKey = null, labelKey = null
     select.appendChild(option);
   });
 }
-
-// ربط أحداث التغيير في الفلاتر لإعادة التحميل تلقائياً
-document.addEventListener('DOMContentLoaded', () => {
-  ['filterSpecialty', 'filterAddress', 'filterSort'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.addEventListener('change', loadSpecialists);
-  });
-});
-
-// تشغيل جلب الأخصائيين عند فتح التبويب
-document.querySelectorAll('.tab-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    if (btn.dataset.tab === 'appointments-section') {
-      loadSpecialists();
-    }
-  });
-});
 
 function bookAppointment(specialistId, specialistName) {
   alert(`سيتم فتح نافذة حجز موعد مع: ${specialistName}`);
