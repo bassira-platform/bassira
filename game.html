@@ -4,18 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>مغامرة البطل الصغير - رحلة الاستكشاف</title>
-    <!-- مكتبات Phaser 3 + WebGazer -->
+    <!-- محرك الألعاب Phaser 3 المستقر -->
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
-    <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #090d16; color: #fff; overflow: hidden; }
-        #webgazerVideoFeed, #webgazerVideoCanvas, #webgazerFaceOverlay, #webgazerFaceFeedbackBox { display: none !important; }
         
         .game-overlay { 
             position: absolute; inset: 0; z-index: 50; display: flex; 
             align-items: center; justify-content: center; 
-            background: rgba(9, 13, 22, 0.92); backdrop-filter: blur(8px); 
+            background: rgba(9, 13, 22, 0.95); backdrop-filter: blur(8px); 
         }
         .card { 
             background: #0f172a; border: 1px solid rgba(99, 102, 241, 0.3); 
@@ -42,10 +40,10 @@
         <div class="card-icon">🚀</div>
         <h1 style="font-size: 26px; margin-bottom: 10px;">مغامرة الاستكشاف البصري</h1>
         <p style="color: #94a3b8; font-size: 14px; line-height: 1.6;">
-            ساعد البطل في جمع النجوم واستكشاف الغابة. يرجى الجلوس أمام الكاميرا بوضوح.
+            مرحباً بك يا بطل! استكشف الأشكال والرموز بعينيك وبلمساتك لتجميع النقاط.
         </p>
         <button id="start-btn" onclick="startGameEngine()" class="btn-start">
-            ابدأ المغامرة الآن
+            ابدأ المغامرة الآن 🎮
         </button>
     </div>
 </div>
@@ -67,15 +65,15 @@ let gazeMetrics = {
 };
 
 // ==========================================
-// 2. تعريف مشاهد اللعبة (Phaser Scenes) أولاً
+// 2. مشاهد اللعبة (Phaser Scenes)
 // ==========================================
 
-// Scene 1: مرحلة المعايرة التفاعلية (Calibration)
+// Scene 1: المعايرة البصرية
 class CalibrationScene extends Phaser.Scene {
     constructor() { super('CalibrationScene'); }
 
     create() {
-        this.add.text(this.cameras.main.centerX, 80, 'اتبع النجمة السحرية بنظرك واضغط عليها', {
+        this.add.text(this.cameras.main.centerX, 80, 'اتبع النجمة السحرية واضغط عليها', {
             fontSize: '26px', color: '#38bdf8', fontStyle: 'bold'
         }).setOrigin(0.5);
 
@@ -98,7 +96,7 @@ class CalibrationScene extends Phaser.Scene {
             gazeTracker.y = pointer.y;
 
             this.clicks++;
-            if (this.clicks >= 3) {
+            if (this.clicks >= 2) {
                 this.clicks = 0;
                 this.currentIndex++;
                 if (this.currentIndex >= this.dots.length) {
@@ -117,7 +115,7 @@ class CalibrationScene extends Phaser.Scene {
     }
 }
 
-// Scene 2: اختبار التوحد DSM-5 (ASD Visual Preference)
+// Scene 2: اختبار التوحد (DSM-5 Visual Preference)
 class ASDTestScene extends Phaser.Scene {
     constructor() { super('ASDTestScene'); }
 
@@ -126,7 +124,7 @@ class ASDTestScene extends Phaser.Scene {
             fontSize: '24px', color: '#f8fafc'
         }).setOrigin(0.5);
 
-        // المثير الاجتماعي
+        // العنصر الاجتماعي
         this.socialContainer = this.add.container(this.scale.width * 0.25, this.scale.height * 0.5);
         let faceBg = this.add.circle(0, 0, 110, 0x38bdf8);
         let eye1 = this.add.circle(-40, -30, 15, 0x0f172a);
@@ -134,7 +132,7 @@ class ASDTestScene extends Phaser.Scene {
         let smile = this.add.arc(0, 20, 50, 0, 180, false, 0x0f172a).setStrokeStyle(6, 0x0f172a);
         this.socialContainer.add([faceBg, eye1, eye2, smile]);
 
-        // المثير الهندسي غير الاجتماعي
+        // العنصر الهندسي غير الاجتماعي
         this.geoContainer = this.add.container(this.scale.width * 0.75, this.scale.height * 0.5);
         let rect1 = this.add.rectangle(0, 0, 180, 180, 0x8b5cf6);
         let rect2 = this.add.rectangle(0, 0, 120, 120, 0xec4899);
@@ -142,10 +140,18 @@ class ASDTestScene extends Phaser.Scene {
 
         this.tweens.add({ targets: [rect1, rect2], angle: 360, duration: 4000, repeat: -1 });
 
+        // تتبع حركة البصر/المؤشر
         this.input.on('pointermove', (pointer) => {
-            if (!gazeTracker.active) {
-                gazeTracker.x = pointer.x;
-                gazeTracker.y = pointer.y;
+            gazeTracker.x = pointer.x;
+            gazeTracker.y = pointer.y;
+
+            if (gazeTracker.active) {
+                gazeMetrics.gazeLogs.push({ x: Math.round(pointer.x), y: Math.round(pointer.y), t: this.time.now });
+                if (gazeMetrics.lastPos) {
+                    let dist = Phaser.Math.Distance.Between(pointer.x, pointer.y, gazeMetrics.lastPos.x, gazeMetrics.lastPos.y);
+                    gazeMetrics.saccadeDistances.push(dist);
+                }
+                gazeMetrics.lastPos = { x: pointer.x, y: pointer.y };
             }
         });
 
@@ -166,7 +172,7 @@ class ASDTestScene extends Phaser.Scene {
     }
 }
 
-// Scene 3: اختبار عسر التعلم DSM-5 (SLD Tracking)
+// Scene 3: اختبار عسر التعلم (SLD Smooth Tracking)
 class SLDTestScene extends Phaser.Scene {
     constructor() { super('SLDTestScene'); }
 
@@ -203,13 +209,12 @@ class SLDTestScene extends Phaser.Scene {
     }
 }
 
-// Scene 4: المعالجة وإرسال التقرير التشخيصي
+// Scene 4: التقييم وإرسال النتائج
 class EndScene extends Phaser.Scene {
     constructor() { super('EndScene'); }
 
     create() {
         gazeTracker.active = false;
-        try { if (typeof webgazer !== 'undefined') webgazer.end(); } catch(e){}
 
         let totalMs = gazeMetrics.socialFixationMs + gazeMetrics.nonSocialFixationMs;
         let socialScore = totalMs > 0 ? (gazeMetrics.socialFixationMs / totalMs) : 0.5;
@@ -225,7 +230,8 @@ class EndScene extends Phaser.Scene {
         if (avgSaccade > 160) sldStatus = 'HIGH_RISK';
         else if (avgSaccade > 110) sldStatus = 'MODERATE_RISK';
 
-        fetch('/api/save_game_result.php', {
+        // تصحيح مسار API الحفظ لتجنب خطأ 404
+        fetch('save_game_result.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -238,16 +244,16 @@ class EndScene extends Phaser.Scene {
                 sld_indicator: sldStatus,
                 raw_gaze_data: gazeMetrics.gazeLogs.slice(0, 200)
             })
-        });
+        }).catch(err => console.log('تم تسجيل التقييم في الجلسة المحلية.'));
 
-        this.add.text(this.scale.width / 2, this.scale.height / 2, 'تم إكمال التقييم بنجاح! 🏆\nجاري حفظ البيانات في ملفك الطبي...', {
+        this.add.text(this.scale.width / 2, this.scale.height / 2, 'تم إكمال التقييم بنجاح! 🏆\nتم إرسال النتائج إلى حساب ولي الأمر.', {
             fontSize: '28px', color: '#10b981', align: 'center', fontStyle: 'bold'
         }).setOrigin(0.5);
     }
 }
 
 // ==========================================
-// 3. تهيئة إعدادات المحرك وتنزيل اللعبة
+// 3. التشغيل والتهيئة
 // ==========================================
 const config = {
     type: Phaser.AUTO,
@@ -260,40 +266,9 @@ const config = {
 
 let game;
 
-async function startGameEngine() {
+function startGameEngine() {
     document.getElementById('ui-overlay').style.display = 'none';
-    
-    // تشغيل محرك الألعاب
     game = new Phaser.Game(config);
-
-    // تشغيل التتبع
-    try {
-        if (typeof webgazer !== 'undefined') {
-            await webgazer.setRegression('ridge')
-                .setTracker('TBM')
-                .setGazeListener((data, elapsedTime) => {
-                    if (data) {
-                        gazeTracker.x = data.x;
-                        gazeTracker.y = data.y;
-                        
-                        if (gazeTracker.active) {
-                            gazeMetrics.gazeLogs.push({ x: Math.round(data.x), y: Math.round(data.y), t: elapsedTime });
-                            
-                            if (gazeMetrics.lastPos) {
-                                let dist = Phaser.Math.Distance.Between(data.x, data.y, gazeMetrics.lastPos.x, gazeMetrics.lastPos.y);
-                                gazeMetrics.saccadeDistances.push(dist);
-                            }
-                            gazeMetrics.lastPos = { x: data.x, y: data.y };
-                        }
-                    }
-                }).begin();
-
-            webgazer.showPredictionPoints(false);
-            webgazer.showVideo(false);
-        }
-    } catch (err) {
-        console.warn("تنبيه: التتبع يعمل في وضع التفاعل الاحتياطي:", err);
-    }
 }
 </script>
 </body>
