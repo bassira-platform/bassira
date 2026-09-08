@@ -6,17 +6,15 @@ session_start();
 
 require_once 'db.php';
 
-// مسح أي مخرجات نصية سابقة
 ob_clean();
 
-// 1. التحقق من الجلسة ورمز الأخصائي user_code
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true || empty($_SESSION['user_code'])) {
     echo json_encode(['status' => 'error', 'message' => 'جلسة العمل انتهت، يرجى إعادة تسجيل الدخول']);
     exit();
 }
 
 try {
-    // 2. جلب بيانات الأخصائي والتخصص وعنوان العيادة
+    // 1. جلب بيانات الأخصائي الحالية
     $stmt = $pdo->prepare("SELECT 
                                 id, 
                                 user_code,
@@ -31,6 +29,11 @@ try {
     $stmt->execute([$_SESSION['user_code']]);
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
+    // 2. جلب قائمة التخصصات المتاحة ديناميكياً من قاعدة البيانات
+    // (ملاحظة: إذا كان لديك جدول خاص بالتخصصات مثل specialties استخدمه، أو اجلب التخصصات المميزة من جدول المستخدمين)
+    $stmtSpecialties = $pdo->query("SELECT DISTINCT specialist_type FROM users WHERE specialist_type IS NOT NULL AND specialist_type != ''");
+    $specialties = $stmtSpecialties->fetchAll(PDO::FETCH_COLUMN);
+
     if ($user) {
         $upload_dir = 'uploads/';
         if (!empty($user['avatar']) && file_exists($upload_dir . $user['avatar'])) {
@@ -40,8 +43,9 @@ try {
         }
 
         echo json_encode([
-            'status' => 'success', 
-            'data'   => $user
+            'status'      => 'success', 
+            'data'        => $user,
+            'specialties' => $specialties // إرسال قائمة التخصصات مع الاستجابة
         ]);
     } else {
         echo json_encode(['status' => 'error', 'message' => 'حساب الأخصائي غير موجود']);

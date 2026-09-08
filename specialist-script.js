@@ -68,21 +68,35 @@ document.addEventListener('DOMContentLoaded', () => {
       .then(res => {
         if (res.status === 'success') {
           const data = res.data;
+          const specialties = res.specialties || [];
           
           const fullNameInput = document.getElementById('specFullName');
           const emailInput = document.getElementById('specEmail');
-          const specialtyInput = document.getElementById('specSpecialty');
+          const specialtySelect = document.getElementById('specSpecialty');
           const phoneInput = document.getElementById('specPhone');
           const clinicAddressInput = document.getElementById('specClinicAddress');
           const avatarPreview = document.getElementById('specialistAvatarPreview');
 
           if (fullNameInput) fullNameInput.value = data.full_name || '';
           if (emailInput) emailInput.value = data.email || '';
-          if (specialtyInput) specialtyInput.value = data.specialist_type || '';
           if (phoneInput) phoneInput.value = data.phone || '';
           if (clinicAddressInput) clinicAddressInput.value = data.clinic_address || '';
-          if (avatarPreview && data.avatar_url) {
-            avatarPreview.src = data.avatar_url;
+          if (avatarPreview && data.avatar_url) avatarPreview.src = data.avatar_url;
+
+          // بناء خيارات القائمة المنسدلة للتخصصات ديناميكياً
+          if (specialtySelect) {
+            specialtySelect.innerHTML = '<option value="" disabled>اختر التخصص...</option>';
+            
+            // إضافة التخصصات المجلوبة من قاعدة البيانات
+            specialties.forEach(spec => {
+              const option = document.createElement('option');
+              option.value = spec;
+              option.textContent = spec;
+              if (spec === data.specialist_type) {
+                option.selected = true; // تحديد تخصص الأخصائي الحالي
+              }
+              specialtySelect.appendChild(option);
+            });
           }
         }
       })

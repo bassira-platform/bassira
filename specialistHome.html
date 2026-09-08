@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>لوحة التحكم - الأخصائي المعتمد | منصة بصيرة</title>
+  <title>الصفحة الرئيسية - الأخصائي المعتمد | منصة بصيرة</title>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="specialist-style.css">
@@ -164,11 +164,12 @@
           <input type="email" id="specEmail" name="email" required placeholder="example@email.com">
         </div>
 
-        <div class="form-group">
+<div class="form-group">
           <label for="specSpecialty">التخصص الطبي / النفسي:</label>
-          <input type="text" id="specSpecialty" name="specialty" readonly class="readonly-input">
+          <select id="specSpecialty" name="specialist_type" required class="form-control">
+            <option value="" disabled selected>جاري تحميل التخصصات...</option>
+          </select>
         </div>
-
         <div class="form-group">
           <label for="specPhone">رقم الهاتف:</label>
           <input type="tel" id="specPhone" name="phone" required placeholder="06XXXXXXXX">

@@ -33,8 +33,8 @@ try {
     $userType       = trim($input['user_type'] ?? $input['role'] ?? 'PARENT'); 
 
     // استقبال التخصص (مع مراعاة المسميين specialist_type أو specialty)
-    $specialistType = trim($input['specialist_type'] ?? $input['specialty'] ?? null);
-
+    $specialistType = trim($input['specialist_type'] ?? $input['specialty'] ?? '');
+     $specialistType = !empty($specialistType) ? strtoupper($specialistType) : null;
     if ($userType === 'PARENT' || empty($specialistType)) {
         $specialistType = null;
     }
