@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ==========================================
-  // 2. الاستماع لنقر أزرار التنقل واللوجو
+  // 2. الاستماع لنقر أزرار التنقل والـ Hash
   // ==========================================
   function handleNavigation() {
     const hash = window.location.hash;
@@ -48,6 +48,18 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   window.addEventListener("hashchange", handleNavigation);
+  
+  // التفاط الضغط على أي رابط يوجه لـ register أو contact لضمان عمله دائماً
+  document.addEventListener("click", (e) => {
+    const link = e.target.closest('a[href="#register"], a[href="#contact"], a[href="#home"]');
+    if (link) {
+      const targetHash = link.getAttribute("href");
+      if (window.location.hash === targetHash) {
+        handleNavigation(); // إعادة التحميل حتى لو كان الـ Hash هو نفسه
+      }
+    }
+  });
+
   handleNavigation();
 
   // ==========================================
@@ -75,276 +87,200 @@ document.addEventListener("DOMContentLoaded", () => {
       document.body.classList.toggle("dark-theme", themeToggle.checked);
     });
   }
-// ==========================================
-// 4. دالة معالجة نموذج قسم "تواصل معنا"
-// ==========================================
-function initContactForm() {
-  const form = document.getElementById("contactForm");
-  if (!form) return;
-
-  const errorBanner = document.getElementById("contactError");
-  const submitBtn = form.querySelector('button[type="submit"]');
-
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const name = document.getElementById("contactName").value.trim();
-    const email = document.getElementById("contactEmail").value.trim();
-    const subject = document.getElementById("contactSubject").value.trim();
-    const message = document.getElementById("contactMessage").value.trim();
-
-    // التحقق من الحقول الفارغة
-    if (!name || !email || !subject || !message) {
-      showError("⚠️ يرجى ملء جميع الخانات المطلوبة قبل الإرسال.");
-      return;
-    }
-
-    // التحقق من صحة البريد
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      showError("⚠️ يرجى إدخال بريد إلكتروني صحيح.");
-      return;
-    }
-
-    hideError();
-    setSubmitting(true);
-
-    try {
-      const response = await fetch("contact.php", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "application/json",
-        },
-        body: JSON.stringify({ name, email, subject, message }),
-      });
-
-      const result = await response.json();
-
-      if (response.ok && result.success) {
-        alert("✅ تم إرسال رسالتك بنجاح إلى فريق منصة بصيرة! وسنتواصل معك قريباً.");
-        form.reset();
-      } else {
-        throw new Error(result.message || "حدث خطأ غير متوقع أثناء الإرسال.");
-      }
-    } catch (error) {
-      console.error("خطأ الإرسال:", error);
-      showError(`❌ ${error.message || "حدث خطأ أثناء إرسال الرسالة، يرجى المحاولة لاحقاً."}`);
-    } finally {
-      setSubmitting(false);
-    }
-  });
-
-  // دوال مساعدة لتبسيط الكود
-  function showError(msg) {
-    errorBanner.textContent = msg;
-    errorBanner.style.display = "block";
-  }
-
-  function hideError() {
-    errorBanner.style.display = "none";
-    errorBanner.textContent = "";
-  }
-
-  function setSubmitting(isSubmitting) {
-    submitBtn.disabled = isSubmitting;
-    submitBtn.textContent = isSubmitting ? "جاري الإرسال..." : "إرسال الرسالة ✉️";
-  }
-}
-
-// ==========================================
-// 5. دالة تهيئة وتحقق نموذج التسجيل
-// ==========================================
-function initRegisterForm() {
-  const registerForm = document.getElementById("registerForm");
-  if (!registerForm) return;
-
-  const specialistFields = document.getElementById("specialistFields");
-  const roleParents = document.getElementById("role-parent");
-  const roleSpecialist = document.getElementById("role-specialist");
-  const alertBox = document.getElementById("alertBox");
-
-  if (roleParents && roleSpecialist && specialistFields) {
-    roleParents.addEventListener("change", () => {
-      specialistFields.style.display = "none";
-    });
-    roleSpecialist.addEventListener("change", () => {
-      specialistFields.style.display = "block";
-    });
-  }
-
-  // متغيرة لحفظ بيانات النموذج موقتاً لحين إدخال OTP
-  let formDataStore = {};
-
-  registerForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    // جلب قيم الحقول
-    const fullName = document.getElementById("fullName").value.trim();
-    const email = document.getElementById("regEmail").value.trim();
-    const phone = document.getElementById("phone").value.trim();
-    const password = document.getElementById("password").value;
-    const confirmPassword = document.getElementById("confirmPassword").value;
-    const isSpecialist = roleSpecialist && roleSpecialist.checked;
-    const specialty = document.getElementById("specialty") ? document.getElementById("specialty").value : "";
-
-    // 1. التحقق من ملء جميع الحقول الأساسية
-    if (!fullName || !email || !phone || !password || !confirmPassword) {
-      showAlert("⚠️ يرجى ملء جميع الحقول المطلوبة بدقة.");
-      return;
-    }
-
-    // 2. التحقق من صحة البريد الإلكتروني
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      showAlert("⚠️ يرجى إدخال بريد إلكتروني صحيح.");
-      return;
-    }
-
-    // 3. التحقق من اختيار التخصص للأخصائي
-    if (isSpecialist && !specialty) {
-      showAlert("⚠️ يرجى تحديد التخصص الطبي/النفسي للأخصائي.");
-      return;
-    }
-
-    // 4. التحقق من طول كلمة المرور (بين 8 و 20 خانة)
-    if (password.length < 8 || password.length > 20) {
-      showAlert("⚠️ يجب أن تكون كلمة المرور بين 8 و 20 خانة.");
-      return;
-    }
-
-    // 5. التحقق من شروط كلمة المرور
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasLowerCase = /[a-z]/.test(password);
-    const hasNumbers = /\d/.test(password);
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-
-    if (!hasUpperCase || !hasLowerCase || !hasNumbers || !hasSpecialChar) {
-      showAlert("⚠️ يجب أن تحتوي كلمة المرور على حرف كبير، حرف صغير، رقم، ورمز خاص واحد على الأقل.");
-      return;
-    }
-
-    // 6. التحقق من تطابق كلمتي المرور
-    if (password !== confirmPassword) {
-      showAlert("⚠️ كلمتا المرور غير متطابقتين.");
-      return;
-    }
-
-    if (alertBox) alertBox.style.display = "none";
-
-    // 💡 تخزين البيانات المدخلة لإرسالها لاحقاً لـ register.php
-    formDataStore = {
-      full_name: fullName,
-      email: email,
-      phone: phone,
-      password: password,
-      user_type: isSpecialist ? "SPECIALIST" : "PARENT",
-      specialist_type: isSpecialist ? specialty : null
-    };
-
-    // 7. بدء طلب إرسال الـ OTP
-    const btnStartRegister = document.getElementById("btnStartRegister") || registerForm.querySelector('button[type="submit"]');
-    const originalBtnText = btnStartRegister ? btnStartRegister.textContent : "إنشاء الحساب 🚀";
-
-    if (btnStartRegister) {
-      btnStartRegister.disabled = true;
-      btnStartRegister.textContent = "جاري إرسال رمز التحقق... ⏳";
-    }
-
-    try {
-      const response = await fetch("send_otp.php", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email })
-      });
-
-      const result = await response.json();
-
-      if (result.success) {
-        const displayTargetEmail = document.getElementById("displayTargetEmail");
-        if (displayTargetEmail) displayTargetEmail.textContent = email;
-
-        const otpModal = document.getElementById("otpModal");
-        if (otpModal) {
-          otpModal.style.display = "flex";
-          otpModal.classList.remove("hidden");
-        }
-      } else {
-        showAlert("❌ " + (result.message || "فشل إرسال رمز التحقق."));
-      }
-    } catch (err) {
-      showAlert("❌ تعذر الاتصال بالسيرفر لإرسال رمز التحقق.");
-    } finally {
-      if (btnStartRegister) {
-        btnStartRegister.disabled = false;
-        btnStartRegister.textContent = originalBtnText;
-      }
-    }
-  });
 
   // ==========================================
-  // 8. إرسال البيانات النهائية لـ register.php عند كتابة الـ OTP
+  // 4. دالة معالجة نموذج قسم "تواصل معنا"
   // ==========================================
-  const btnVerifyOtp = document.getElementById("btnVerifyOtp"); // أو زر التأكيد داخل Modal
-  if (btnVerifyOtp) {
-    btnVerifyOtp.addEventListener("click", async () => {
-      const otpInput = document.getElementById("otpInput") || document.getElementById("otp");
-      const otpCode = otpInput ? otpInput.value.trim() : "";
+  function initContactForm() {
+    const form = document.getElementById("contactForm");
+    if (!form) return;
 
-      if (!otpCode) {
-        alert("⚠️ يرجى إدخال رمز التحقق.");
+    const errorBanner = document.getElementById("contactError");
+    const submitBtn = form.querySelector('button[type="submit"]');
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const name = document.getElementById("contactName").value.trim();
+      const email = document.getElementById("contactEmail").value.trim();
+      const subject = document.getElementById("contactSubject").value.trim();
+      const message = document.getElementById("contactMessage").value.trim();
+
+      if (!name || !email || !subject || !message) {
+        showError("⚠️ يرجى ملء جميع الخانات المطلوبة قبل الإرسال.");
         return;
       }
 
-      btnVerifyOtp.disabled = true;
-      btnVerifyOtp.textContent = "جاري التثبيت... ⏳";
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        showError("⚠️ يرجى إدخال بريد إلكتروني صحيح.");
+        return;
+      }
+
+      hideError();
+      setSubmitting(true);
 
       try {
-        // دمج الـ OTP مع بيانات الحساب
-        const payload = {
-          ...formDataStore,
-          otp_code: otpCode
-        };
+        const response = await fetch("contact.php", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+          },
+          body: JSON.stringify({ name, email, subject, message }),
+        });
 
-        const response = await fetch("register.php", {
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          alert("✅ تم إرسال رسالتك بنجاح!");
+          form.reset();
+        } else {
+          throw new Error(result.message || "حدث خطأ غير متوقع أثناء الإرسال.");
+        }
+      } catch (error) {
+        console.error("خطأ الإرسال:", error);
+        showError(`❌ ${error.message || "حدث خطأ أثناء إرسال الرسالة، يرجى المحاولة لاحقاً."}`);
+      } finally {
+        setSubmitting(false);
+      }
+    });
+
+    function showError(msg) {
+      if (errorBanner) {
+        errorBanner.textContent = msg;
+        errorBanner.style.display = "block";
+      } else {
+        alert(msg);
+      }
+    }
+
+    function hideError() {
+      if (errorBanner) errorBanner.style.display = "none";
+    }
+
+    function setSubmitting(isSubmitting) {
+      if (submitBtn) {
+        submitBtn.disabled = isSubmitting;
+        submitBtn.textContent = isSubmitting ? "جاري الإرسال..." : "إرسال الرسالة ✉️";
+      }
+    }
+  }
+
+  // ==========================================
+  // 5. دالة تهيئة وتحقق نموذج التسجيل
+  // ==========================================
+  function initRegisterForm() {
+    const registerForm = document.getElementById("registerForm");
+    if (!registerForm) return;
+
+    const specialistFields = document.getElementById("specialistFields");
+    const roleParents = document.getElementById("role-parent");
+    const roleSpecialist = document.getElementById("role-specialist");
+    const alertBox = document.getElementById("alertBox");
+
+    if (roleParents && roleSpecialist && specialistFields) {
+      roleParents.addEventListener("change", () => {
+        specialistFields.style.display = "none";
+      });
+      roleSpecialist.addEventListener("change", () => {
+        specialistFields.style.display = "block";
+      });
+    }
+
+    registerForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const fullName = document.getElementById("fullName") ? document.getElementById("fullName").value.trim() : "";
+      const email = document.getElementById("regEmail") ? document.getElementById("regEmail").value.trim() : "";
+      const phone = document.getElementById("phone") ? document.getElementById("phone").value.trim() : "";
+      const password = document.getElementById("password") ? document.getElementById("password").value : "";
+      const confirmPassword = document.getElementById("confirmPassword") ? document.getElementById("confirmPassword").value : "";
+      const isSpecialist = roleSpecialist && roleSpecialist.checked;
+      const specialty = document.getElementById("specialty") ? document.getElementById("specialty").value : "";
+
+      if (!fullName || !email || !phone || !password || !confirmPassword) {
+        showAlert("⚠️ يرجى ملء جميع الحقول المطلوبة بدقة.");
+        return;
+      }
+
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        showAlert("⚠️ يرجى إدخال بريد إلكتروني صحيح.");
+        return;
+      }
+
+      if (isSpecialist && !specialty) {
+        showAlert("⚠️ يرجى تحديد التخصص الطبي/النفسي للأخصائي.");
+        return;
+      }
+
+      if (password.length < 8 || password.length > 20) {
+        showAlert("⚠️ يجب أن تكون كلمة المرور بين 8 و 20 خانة.");
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        showAlert("⚠️ كلمتا المرور غير متطابقتين.");
+        return;
+      }
+
+      if (alertBox) alertBox.style.display = "none";
+
+      const btnStartRegister = document.getElementById("btnStartRegister") || registerForm.querySelector('button[type="submit"]');
+      const originalBtnText = btnStartRegister ? btnStartRegister.textContent : "إنشاء الحساب 🚀";
+
+      if (btnStartRegister) {
+        btnStartRegister.disabled = true;
+        btnStartRegister.textContent = "جاري إرسال رمز التحقق... ⏳";
+      }
+
+      try {
+        const response = await fetch("send_otp.php", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({ email: email })
         });
 
         const result = await response.json();
 
         if (result.success) {
-          alert("🎉 " + result.message);
-          window.location.href = result.redirect || "parentHome.html";
+          const displayTargetEmail = document.getElementById("displayTargetEmail");
+          if (displayTargetEmail) displayTargetEmail.textContent = email;
+
+          const otpModal = document.getElementById("otpModal");
+          if (otpModal) {
+            otpModal.style.display = "flex";
+            otpModal.classList.remove("hidden");
+          }
         } else {
-          alert("❌ " + (result.message || "فشل تسجيل الحساب."));
+          showAlert("❌ " + (result.message || "فشل إرسال رمز التحقق."));
         }
       } catch (err) {
-        alert("❌ تعذر الاتصال بالسيرفر لإكمال إدراج الحساب.");
+        showAlert("❌ تعذر الاتصال بالسيرفر لإرسال رمز التحقق.");
       } finally {
-        btnVerifyOtp.disabled = false;
-        btnVerifyOtp.textContent = "تأكيد الرمز التسجيل 🚀";
+        if (btnStartRegister) {
+          btnStartRegister.disabled = false;
+          btnStartRegister.textContent = originalBtnText;
+        }
       }
     });
-  }
 
-  function showAlert(message) {
-    if (alertBox) {
-      alertBox.textContent = message;
-      alertBox.style.display = "block";
-      alertBox.scrollIntoView({ behavior: "smooth", block: "center" });
-    } else {
-      alert(message);
+    function showAlert(message) {
+      if (alertBox) {
+        alertBox.textContent = message;
+        alertBox.style.display = "block";
+        alertBox.scrollIntoView({ behavior: "smooth", block: "center" });
+      } else {
+        alert(message);
+      }
     }
   }
-}
 
-// ==========================================
-  // 6. دالة التحقق من رمز الـ OTP وإنشاء الحساب
+  // ==========================================
+  // 6. دالة التعامل مع الـ OTP
   // ==========================================
   function initOTPVerification() {
-    // 1. تفعيل زر إغلاق النافذة المنبثقة
     const closeOtpModal = document.getElementById("closeOtpModal");
     if (closeOtpModal) {
       closeOtpModal.onclick = () => {
@@ -353,7 +289,6 @@ function initRegisterForm() {
       };
     }
 
-    // 2. تفعيل زر إعادة إرسال الرمز (Resend OTP)
     const resendOtpBtn = document.getElementById("resendOtpBtn");
     if (resendOtpBtn) {
       resendOtpBtn.onclick = async (e) => {
@@ -388,99 +323,75 @@ function initRegisterForm() {
       };
     }
 
-    // 3. ربط حدث الضغط على زر التأكيد
     document.removeEventListener("click", handleOtpClick);
     document.addEventListener("click", handleOtpClick);
   }
 
   async function handleOtpClick(e) {
-  // التحقق مما إذا كان العنصر المضغوط عليه هو زر تأكيد الـ OTP
-  if (e.target && e.target.id === "btnVerifyOtp") {
-    e.preventDefault();
-    e.stopPropagation();
+    if (e.target && e.target.id === "btnVerifyOtp") {
+      e.preventDefault();
+      e.stopPropagation();
 
-    const otpModal = document.getElementById("otpModal");
-    const otpInput = document.getElementById("otpInput");
-    const btnVerifyOtp = e.target;
+      const otpModal = document.getElementById("otpModal");
+      const otpInput = document.getElementById("otpInput");
+      const btnVerifyOtp = e.target;
 
-    const otpCode = otpInput ? otpInput.value.trim() : "";
-    const email = document.getElementById("regEmail") ? document.getElementById("regEmail").value.trim() : "";
+      const otpCode = otpInput ? otpInput.value.trim() : "";
+      const email = document.getElementById("regEmail") ? document.getElementById("regEmail").value.trim() : "";
 
-    if (!otpCode || otpCode.length !== 6) {
-      alert("⚠️ يرجى إدخال رمز التحقق المكون من 6 أرقام.");
-      return;
-    }
-
-    btnVerifyOtp.disabled = true;
-    btnVerifyOtp.textContent = "جاري التحقق... ⏳";
-
-    try {
-      const fullName = document.getElementById("fullName") ? document.getElementById("fullName").value.trim() : "";
-      const phone = document.getElementById("phone") ? document.getElementById("phone").value.trim() : "";
-      const password = document.getElementById("password") ? document.getElementById("password").value : "";
-      const roleSpecialist = document.getElementById("role-specialist");
-      const role = (roleSpecialist && roleSpecialist.checked) ? "SPECIALIST" : "PARENT";
-      
-      // جلب التخصص بغض النظر عن ID القائمة المنسدلة
-      const specialtySelect = document.getElementById("specialty") || document.getElementById("specialist_type");
-      const specialty = (role === "SPECIALIST" && specialtySelect) ? specialtySelect.value : null;
-
-      const response = await fetch("register.php", {
-        method: "POST",
-        headers: { 
-          "Content-Type": "application/json",
-          "Accept": "application/json"
-        },
-        body: JSON.stringify({
-          email: email,
-          otp_code: otpCode,
-          full_name: fullName,
-          phone: phone,
-          password: password,
-          user_type: role,          // تمرير user_type المتوافق مع ملف PHP
-          role: role,               // احتياطي للأدوار
-          specialist_type: specialty, // المفتاح الأصلي لملف PHP
-          specialty: specialty      // مفتاح احتياطي
-        })
-      });
-
-      const result = await response.json();
-
-      if (result.success || result.status === "success") {
-        alert("✅ تم إنشاء الحساب بنجاح!");
-        if (otpModal) otpModal.classList.add("hidden");
-        
-        // التوجيه بناءً على نوع المستخدم
-        window.location.href = role === "SPECIALIST" ? "specialist-dashboard.php" : "parent-dashboard.php";
-      } else {
-        alert("❌ " + (result.message || "فشل التحقق من رمز OTP."));
+      if (!otpCode || otpCode.length !== 6) {
+        alert("⚠️ يرجى إدخال رمز التحقق المكون من 6 أرقام.");
+        return;
       }
 
-    } catch (error) {
-      console.error("خطأ أثناء الاتصال بالخادم:", error);
-      alert("❌ حدث خطأ في الاتصال بالخادم، يرجى المحاولة لاحقاً.");
-    } finally {
-      btnVerifyOtp.disabled = false;
-      btnVerifyOtp.textContent = "تأكيد الرمز 🔓";
-    }
-  }
-}
+      btnVerifyOtp.disabled = true;
+      btnVerifyOtp.textContent = "جاري التحقق... ⏳";
+
+      try {
+        const fullName = document.getElementById("fullName") ? document.getElementById("fullName").value.trim() : "";
+        const phone = document.getElementById("phone") ? document.getElementById("phone").value.trim() : "";
+        const password = document.getElementById("password") ? document.getElementById("password").value : "";
+        const roleSpecialist = document.getElementById("role-specialist");
+        const role = (roleSpecialist && roleSpecialist.checked) ? "SPECIALIST" : "PARENT";
+        
+        const specialtySelect = document.getElementById("specialty") || document.getElementById("specialist_type");
+        const specialty = (role === "SPECIALIST" && specialtySelect) ? specialtySelect.value : null;
+
+        const response = await fetch("register.php", {
+          method: "POST",
+          headers: { 
+            "Content-Type": "application/json",
+            "Accept": "application/json"
+          },
+          body: JSON.stringify({
+            email: email,
+            otp_code: otpCode,
+            full_name: fullName,
+            phone: phone,
+            password: password,
+            user_type: role,
+            role: role,
+            specialist_type: specialty,
+            specialty: specialty
+          })
+        });
 
         const result = await response.json();
 
-        if (result.success) {
-          alert("✅ تم إنشاء حسابك بنجاح! جاري توجيهك...");
+        if (result.success || result.status === "success") {
+          alert("✅ تم إنشاء الحساب بنجاح!");
           if (otpModal) otpModal.style.display = "none";
-          window.location.href = result.redirect || "parentHome.html";
+          window.location.href = result.redirect || (role === "SPECIALIST" ? "specialistHome.html" : "parentHome.html");
         } else {
-          alert("❌ " + (result.message || "رمز التحقق غير صحيح أو منتهي الصلاحية."));
+          alert("❌ " + (result.message || "فشل التحقق من رمز OTP."));
         }
-      } catch (err) {
-        console.error(err);
-        alert("❌ حدث خطأ أثناء الاتصال بالسيرفر لتأكيد الرمز.");
+
+      } catch (error) {
+        console.error("خطأ أثناء الاتصال بالخادم:", error);
+        alert("❌ حدث خطأ في الاتصال بالخادم، يرجى المحاولة لاحقاً.");
       } finally {
         btnVerifyOtp.disabled = false;
-        btnVerifyOtp.textContent = "تأكيد وإنشاء الحساب 🚀";
+        btnVerifyOtp.textContent = "تأكيد الرمز 🔓";
       }
     }
   }

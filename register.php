@@ -28,8 +28,12 @@ try {
     $fullName       = trim($input['full_name'] ?? '');
     $phone          = trim($input['phone'] ?? '');
     $password       = $input['password'] ?? '';
-    $userType       = trim($input['user_type'] ?? 'PARENT'); 
-    $specialistType = trim($input['specialist_type'] ?? null);
+    
+    // استقبال نوع المستخدم (مع مراعاة المسميين user_type أو role)
+    $userType       = trim($input['user_type'] ?? $input['role'] ?? 'PARENT'); 
+
+    // استقبال التخصص (مع مراعاة المسميين specialist_type أو specialty)
+    $specialistType = trim($input['specialist_type'] ?? $input['specialty'] ?? null);
 
     if ($userType === 'PARENT' || empty($specialistType)) {
         $specialistType = null;
@@ -46,7 +50,7 @@ try {
         exit;
     }
 
-    // 4. التحقق من عدم تكرار البريد الإلكتروني (باستخدام متغير $pdo من db.php)
+    // 4. التحقق من عدم تكرار البريد الإلكتروني
     $checkStmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
     $checkStmt->execute([$email]);
     if ($checkStmt->fetch()) {
