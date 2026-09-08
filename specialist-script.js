@@ -195,5 +195,50 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // تشغيل الاستعلامات الذاتية
   loadSpecialistProfile();
+// جلب البيانات عند التحميل
+function loadSpecialistProfile() {
+  fetch('get_specialist_profile.php')
+    .then(res => res.json())
+    .then(res => {
+      if (res.status === 'success') {
+        const data = res.data;
+        if (document.getElementById('specFullName')) document.getElementById('specFullName').value = data.full_name || '';
+        if (document.getElementById('specEmail')) document.getElementById('specEmail').value = data.email || '';
+        if (document.getElementById('specSpecialty')) document.getElementById('specSpecialty').value = data.specialist_type || '';
+        if (document.getElementById('specPhone')) document.getElementById('specPhone').value = data.phone || '';
+        if (document.getElementById('specClinicAddress')) document.getElementById('specClinicAddress').value = data.clinic_address || '';
+        if (document.getElementById('specialistAvatarPreview') && data.avatar_url) {
+          document.getElementById('specialistAvatarPreview').src = data.avatar_url;
+        }
+      }
+    })
+    .catch(err => console.error('خطأ جلب البيانات:', err));
+}
+
+// حفظ التعديلات عند التقديم
+const specialistProfileForm = document.getElementById('specialistProfileForm');
+if (specialistProfileForm) {
+  specialistProfileForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(specialistProfileForm);
+
+    try {
+      const response = await fetch('update_specialist_profile.php', {
+        method: 'POST',
+        body: formData
+      });
+      const result = await response.json();
+
+      if (result.status === 'success') {
+        alert('✅ ' + result.message);
+        loadSpecialistProfile();
+      } else {
+        alert('❌ ' + result.message);
+      }
+    } catch (err) {
+      alert('❌ حدث خطأ أثناء الاتصال بالخادم.');
+    }
+  });
+}
 
 });
