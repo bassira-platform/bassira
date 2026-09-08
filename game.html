@@ -4,19 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>مغامرة البطل الصغير - رحلة الاستكشاف</title>
-    <!-- محرك الألعاب Phaser 3 + WebGazer + Tailwind CSS -->
+    <!-- مكتبات Phaser 3 + WebGazer + Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body { margin: 0; background-color: #090d16; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; }
-        #webgazerVideoFeed, #webgazerFaceOverlay, #webgazerFaceFeedbackBox { display: none !important; }
+        #webgazerVideoFeed, #webgazerVideoCanvas, #webgazerFaceOverlay, #webgazerFaceFeedbackBox { display: none !important; }
         .game-overlay { position: absolute; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
 
-<!-- واجهة البدء والارتقاء بالجرافيك -->
 <div id="ui-overlay" class="game-overlay bg-slate-950/90 backdrop-blur-md">
     <div class="max-w-md w-full bg-slate-900 border border-indigo-500/30 rounded-3xl p-8 text-center shadow-2xl">
         <div class="w-20 h-20 bg-indigo-600/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-indigo-500/40">
@@ -39,7 +38,7 @@
 // 1. المتغيرات والبيانات الطبية (DSM-5 Metrics)
 // ==========================================
 let childId = new URLSearchParams(window.location.search).get('child_id') || 6;
-let gazeTracker = { x: 0, y: 0, active: false };
+let gazeTracker = { x: window.innerWidth / 2, y: window.innerHeight / 2, active: false };
 let gazeMetrics = {
     socialFixationMs: 0,
     nonSocialFixationMs: 0,
@@ -62,29 +61,41 @@ const config = {
 
 let game;
 
-function startGameEngine() {
+async function startGameEngine() {
     document.getElementById('ui-overlay').style.display = 'none';
     
-    // تشغيل WebGazer بحجم معالجة خفيف ودقيق
-    webgazer.setGazeListener((data, elapsedTime) => {
-        if (data) {
-            gazeTracker.x = data.x;
-            gazeTracker.y = data.y;
-            
-            if (gazeTracker.active) {
-                gazeMetrics.gazeLogs.push({ x: Math.round(data.x), y: Math.round(data.y), t: elapsedTime });
-                
-                if (gazeMetrics.lastPos) {
-                    let dist = Phaser.Math.Distance.Between(data.x, data.y, gazeMetrics.lastPos.x, gazeMetrics.lastPos.y);
-                    gazeMetrics.saccadeDistances.push(dist);
-                }
-                gazeMetrics.lastPos = { x: data.x, y: data.y };
-            }
-        }
-    }).begin();
-
-    webgazer.showPredictionPoints(false);
+    // تشغيل محرك الألعاب أولاً
     game = new Phaser.Game(config);
+
+    // تهيئة WebGazer مع تفادي أخطاء الاستضافة 404
+    try {
+        // إيقاف التتبع التجريبي القديم لتجنب تعارض الـ Promises
+        if (typeof webgazer !== 'undefined') {
+            await webgazer.setRegression('ridge') /* استخدام خوارزمية Ridge المستقرة بدلاً من النماذج الثقيلة */
+                .setTracker('TBM') /* أسلوب تتبع أخف وزناً لمنع أخطاء face_mesh */
+                .setGazeListener((data, elapsedTime) => {
+                    if (data) {
+                        gazeTracker.x = data.x;
+                        gazeTracker.y = data.y;
+                        
+                        if (gazeTracker.active) {
+                            gazeMetrics.gazeLogs.push({ x: Math.round(data.x), y: Math.round(data.y), t: elapsedTime });
+                            
+                            if (gazeMetrics.lastPos) {
+                                let dist = Phaser.Math.Distance.Between(data.x, data.y, gazeMetrics.lastPos.x, gazeMetrics.lastPos.y);
+                                gazeMetrics.saccadeDistances.push(dist);
+                            }
+                            gazeMetrics.lastPos = { x: data.x, y: data.y };
+                        }
+                    }
+                }).begin();
+
+            webgazer.showPredictionPoints(false);
+            webgazer.showVideo(false);
+        }
+    } catch (err) {
+        console.warn("تنبيه: تعذر تحميل تتبع العين الكامل، يتم الآن التشغيل في وضع التفاعل المباشر:", err);
+    }
 }
 
 // ==========================================
@@ -109,14 +120,16 @@ class CalibrationScene extends Phaser.Scene {
         this.star = this.add.circle(0, 0, 30, 0xf59e0b).setInteractive();
         this.star.setStrokeStyle(4, 0xffffff);
         
-        // تأثير نبض الرسوميات
         this.tweens.add({ targets: this.star, scale: 1.2, duration: 600, yoyo: true, repeat: -1 });
-
         this.updateStarPosition();
 
-        this.star.on('pointerdown', () => {
+        this.star.on('pointerdown', (pointer) => {
+            // استخدام موضع النقر كمؤشر احتياطي في حال عدم استجابة الكاميرا
+            gazeTracker.x = pointer.x;
+            gazeTracker.y = pointer.y;
+
             this.clicks++;
-            if (this.clicks >= 4) {
+            if (this.clicks >= 3) {
                 this.clicks = 0;
                 this.currentIndex++;
                 if (this.currentIndex >= this.dots.length) {
@@ -146,7 +159,7 @@ class ASDTestScene extends Phaser.Scene {
             fontSize: '24px', color: '#f8fafc'
         }).setOrigin(0.5);
 
-        // العنصر الاجتماعي: وجه تفاعلي متكرر التعبيرات
+        // المثير الاجتماعي
         this.socialContainer = this.add.container(this.scale.width * 0.25, this.scale.height * 0.5);
         let faceBg = this.add.circle(0, 0, 110, 0x38bdf8);
         let eye1 = this.add.circle(-40, -30, 15, 0x0f172a);
@@ -154,7 +167,7 @@ class ASDTestScene extends Phaser.Scene {
         let smile = this.add.arc(0, 20, 50, 0, 180, false, 0x0f172a).setStrokeStyle(6, 0x0f172a);
         this.socialContainer.add([faceBg, eye1, eye2, smile]);
 
-        // العنصر الهندسي غير الاجتماعي: أنماط متداخلة تدور وتتحرك (Geo-Pattern)
+        // المثير الهندسي غير الاجتماعي
         this.geoContainer = this.add.container(this.scale.width * 0.75, this.scale.height * 0.5);
         let rect1 = this.add.rectangle(0, 0, 180, 180, 0x8b5cf6);
         let rect2 = this.add.rectangle(0, 0, 120, 120, 0xec4899);
@@ -162,14 +175,20 @@ class ASDTestScene extends Phaser.Scene {
 
         this.tweens.add({ targets: [rect1, rect2], angle: 360, duration: 4000, repeat: -1 });
 
-        // الإنهاء بعد 12 ثانية لنقل البيانات
-        this.time.delayedCall(12000, () => {
+        // تتبع مؤشر الماوس بصفة احتياطية عند غياب التتبع البصري
+        this.input.on('pointermove', (pointer) => {
+            if (!gazeTracker.active) {
+                gazeTracker.x = pointer.x;
+                gazeTracker.y = pointer.y;
+            }
+        });
+
+        this.time.delayedCall(10000, () => {
             this.scene.start('SLDTestScene');
         });
     }
 
     update(time, delta) {
-        // قياس البؤرة البصرية على المثيرات
         let socialBounds = new Phaser.Geom.Circle(this.scale.width * 0.25, this.scale.height * 0.5, 150);
         let geoBounds = new Phaser.Geom.Rectangle(this.scale.width * 0.75 - 100, this.scale.height * 0.5 - 100, 200, 200);
 
@@ -199,7 +218,6 @@ class SLDTestScene extends Phaser.Scene {
             fontSize: '110px', color: '#f43f5e', fontStyle: 'bold'
         }).setOrigin(0.5);
 
-        // مسار حركة سلس (Smooth Pursuit)
         this.tweens.add({
             targets: this.label,
             x: { value: this.scale.width - 200, duration: 3000, ease: 'Sine.easeInOut', yoyo: true, repeat: -1 },
@@ -229,17 +247,15 @@ class EndScene extends Phaser.Scene {
 
     create() {
         gazeTracker.active = false;
-        webgazer.end();
+        try { if (typeof webgazer !== 'undefined') webgazer.end(); } catch(e){}
 
         let totalMs = gazeMetrics.socialFixationMs + gazeMetrics.nonSocialFixationMs;
         let socialScore = totalMs > 0 ? (gazeMetrics.socialFixationMs / totalMs) : 0.5;
 
-        // معايير ASD (DSM-5 Criteria A1)
         let asdStatus = 'LOW_RISK';
         if (socialScore < 0.35) asdStatus = 'HIGH_RISK';
         else if (socialScore < 0.50) asdStatus = 'MODERATE_RISK';
 
-        // معايير SLD (Saccades & Tracking Smoothness)
         let avgSaccade = gazeMetrics.saccadeDistances.length > 0 ? 
             (gazeMetrics.saccadeDistances.reduce((a,b)=>a+b, 0) / gazeMetrics.saccadeDistances.length) : 0;
         
@@ -247,7 +263,7 @@ class EndScene extends Phaser.Scene {
         if (avgSaccade > 160) sldStatus = 'HIGH_RISK';
         else if (avgSaccade > 110) sldStatus = 'MODERATE_RISK';
 
-        // الحفظ وإرسال API
+        // إرسال النتيجة إلى قاعدة البيانات
         fetch('/api/save_game_result.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
