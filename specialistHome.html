@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة التحكم - الأخصائي المعتمد | منصة بصيرة</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="specialist-style.css">
+</head>
+<body>
+
+  <!-- الهيدر الرئيسي -->
+  <header class="app-header">
+    <div class="logo-container">
+      <img src="logo.png" alt="شعار بصيرة" class="logo-img">
+      <span class="logo-text">بصيرة <small class="role-badge">الأخصائي</small></span>
+    </div>
+
+    <!-- قائمة الخيارات المنسدلة -->
+    <div class="user-menu-wrapper">
+      <button id="userMenuBtn" class="icon-menu-btn" aria-label="القائمة">
+        <i class="fas fa-ellipsis-v"></i>
+      </button>
+      <div id="userDropdown" class="dropdown-content hidden">
+        <a href="#profile" class="dropdown-item" id="openSpecialistProfileBtn"><i class="fas fa-user-md"></i> الملف المهني</a>
+        <a href="#settings" class="dropdown-item"><i class="fas fa-cog"></i> الإعدادات</a>
+        <hr>
+        <a href="logout.php" class="dropdown-item logout-link"><i class="fas fa-sign-out-alt"></i> تسجيل الخروج</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- المحتوى الرئيسي -->
+  <main class="main-content" id="mainContent">
+    
+    <!-- تبويبات التنقل الرئيسية -->
+    <nav class="dashboard-tabs">
+      <button class="tab-btn active" data-tab="appointments-section">
+        <i class="fas fa-calendar-check"></i> المواعيد والاستشارات
+      </button>
+      <button class="tab-btn" data-tab="patients-section">
+        <i class="fas fa-user-nurse"></i> الأطفال المتابَعون
+      </button>
+      <button class="tab-btn" data-tab="medical-files-section">
+        <i class="fas fa-folder-open"></i> الملفات والتقارير الطبية
+      </button>
+    </nav>
+
+    <!-- قسم 1: المواعيد والاستشارات -->
+    <section id="appointments-section" class="tab-content active">
+      <div class="section-header">
+        <h2><i class="fas fa-clock"></i> طلبات المواعيد الحالية</h2>
+      </div>
+      <div id="appointmentsContainer" class="appointments-list">
+        <!-- حالة فارغة -->
+        <div class="empty-state">
+          <div class="empty-icon"><i class="fas fa-calendar-times"></i></div>
+          <h3>لا توجد مواعيد محجوزة حالياً</h3>
+          <p>ستظهر هنا طلبات الحجز الجديدة الموجهة إليك من أولياء الأمور.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- قسم 2: الأطفال المتابَعون -->
+    <section id="patients-section" class="tab-content hidden">
+      <div class="section-header">
+        <h2><i class="fas fa-children"></i> قائمة الأطفال</h2>
+      </div>
+      <div id="patientsContainer" class="children-grid">
+        <!-- يتم ملؤها ديناميكياً ببطاقات الأطفال -->
+        <div class="empty-state">
+          <div class="empty-icon"><i class="fas fa-user-clock"></i></div>
+          <h3>لا يوجد أطفال قيد المتابعة</h3>
+          <p>عند الموافقة على طلبات الكشف، سيتم إدراج الأطفال هنا لمتابعة ملفاتهم الصحية.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- قسم 3: استقبال الملفات والتقارير الطبية من أولياء الأمور -->
+    <section id="medical-files-section" class="tab-content hidden">
+      <div class="section-header">
+        <h2><i class="fas fa-file-medical-alt"></i> المرفقات والتقارير الطبية الواردة</h2>
+      </div>
+      
+      <!-- فلترة حسب الطفل -->
+      <div class="filter-wrapper">
+        <label for="filterChildSelect">تصفية حسب الطفل:</label>
+        <select id="filterChildSelect" class="form-control">
+          <option value="all">جميع الأطفال</option>
+        </select>
+      </div>
+<div id="medicalFilesContainer" class="files-grid">
+  
+  <!-- بطاقة ملف الـ PDF: دليل الفحص الطبي -->
+  <div class="file-card" data-file="guide.pdf" data-type="pdf">
+    <div class="file-type-icon pdf">
+      <i class="fas fa-file-pdf"></i>
+    </div>
+    <div class="file-details">
+      <h4>دليل تقرير الفحص الطبي</h4>
+      <p><strong>الطفل:</strong> أحمد محمد</p>
+      <p><strong>ولي الأمر:</strong> علي محمد</p>
+      <span class="file-date"><i class="fas fa-calendar-day"></i> 2026-09-01</span>
+    </div>
+    <div class="file-actions">
+      <a href="#" class="btn-action view-btn" title="معاينة الملف"><i class="fas fa-eye"></i> معاينة</a>
+      <a href="guide.pdf" download class="btn-action download-btn" title="تحميل الملف"><i class="fas fa-download"></i></a>
+    </div>
+  </div>
+
+  <!-- بطاقة ملف الصورة: نتائج التحاليل والأشعة -->
+  <div class="file-card" data-file="téléchargement (1).png" data-type="image">
+    <div class="file-type-icon image">
+      <i class="fas fa-file-image"></i>
+    </div>
+    <div class="file-details">
+      <h4>نتائج الفحص والأشعة</h4>
+      <p><strong>الطفل:</strong> سارة كريم</p>
+      <p><strong>ولي الأمر:</strong> كريم أحمد</p>
+      <span class="file-date"><i class="fas fa-calendar-day"></i> 2026-09-05</span>
+    </div>
+    <div class="file-actions">
+      <a href="#" class="btn-action view-btn" title="معاينة الملف"><i class="fas fa-eye"></i> معاينة</a>
+      <a href="téléchargement (1).png" download class="btn-action download-btn" title="تحميل الملف"><i class="fas fa-download"></i></a>
+    </div>
+  </div>
+
+</div>
+    </section>
+
+  </main>
+
+  <!-- النافذة المنبثقة 1: معاينة الملف الطبي/التقرير (PDF أو صورة) -->
+  <div id="viewFileModal" class="modal hidden">
+    <div class="modal-content large-modal">
+      <span class="close-modal" id="closeViewFileModal">&times;</span>
+      <h3 id="modalFileTitle"><i class="fas fa-file-medical"></i> معاينة المستند الطبي</h3>
+      <div id="filePreviewContainer" class="preview-container">
+        <!-- يتم تحميل الصورة أو الـ PDF داخل iframe/img هنا عبر الجافاسكريبت -->
+      </div>
+    </div>
+  </div>
+
+  <!-- النافذة المنبثقة 2: إضافة تقرير / تشخيص للأخصائي -->
+  <div id="addMedicalReportModal" class="modal hidden">
+    <div class="modal-content">
+      <span class="close-modal" id="closeAddReportModal">&times;</span>
+      <h3><i class="fas fa-notes-medical"></i> كتابة تقرير / تشخيص طبي</h3>
+      <form id="addReportForm">
+        <input type="hidden" id="reportChildId" name="child_id">
+        
+        <div class="form-group">
+          <label for="reportTitle">عنوان التقرير / الجلسة:</label>
+          <input type="text" id="reportTitle" name="title" required placeholder="مثال: تقييم النطق الأول">
+        </div>
+
+        <div class="form-group">
+          <label for="diagnosis">التشخيص / الملاحظات:</label>
+          <textarea id="diagnosis" name="diagnosis" rows="4" required placeholder="أدخل تفاصيل التقييم والتوصيات..."></textarea>
+        </div>
+
+        <button type="submit" class="btn-primary">حفظ وإرسال التقرير لولي الأمر 🚀</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- النافذة المنبثقة 3: الملف المهني للأخصائي -->
+  <div id="specialistProfileModal" class="modal hidden">
+    <div class="modal-content profile-modal-content">
+      <span class="close-btn" id="closeSpecialistProfileModal">&times;</span>
+      <h3><i class="fas fa-user-md"></i> الملف المهني للأخصائي</h3>
+
+      <form id="specialistProfileForm" enctype="multipart/form-data">
+        
+        <div class="profile-avatar-wrapper">
+          <img id="specialistAvatarPreview" src="default-doctor.png" alt="الصورة الشخصية" class="profile-avatar-img">
+          <label for="specialistAvatarInput" class="btn-change-avatar">
+            <i class="fas fa-camera"></i> تغيير الصورة
+          </label>
+          <input type="file" id="specialistAvatarInput" name="avatar" accept="image/*" class="hidden">
+        </div>
+
+        <div class="form-group">
+          <label for="specFullName">الاسم الكامل:</label>
+          <input type="text" id="specFullName" name="full_name" required>
+        </div>
+
+        <div class="form-group">
+          <label for="specSpecialty">التخصص الطبي / النفسي:</label>
+          <input type="text" id="specSpecialty" name="specialty" readonly class="readonly-input">
+        </div>
+
+        <div class="form-group">
+          <label for="specPhone">رقم الهاتف:</label>
+          <input type="tel" id="specPhone" name="phone" required placeholder="06XXXXXXXX">
+        </div>
+
+        <div class="form-group">
+          <label for="specClinicAddress">عنوان العيادة / مكان العمل:</label>
+          <input type="text" id="specClinicAddress" name="clinic_address" placeholder="المدينة / الولاية / الشارع">
+        </div>
+
+        <!-- حقل كلمة المرور المعزز بمنطق الإظهار والإخفاء -->
+        <div class="form-group">
+          <label for="specialistNewPassword">كلمة المرور الجديدة (أتركها فارغة إذا لم تُرِد تغييرها):</label>
+          <div class="input-wrapper">
+            <input type="password" id="specialistNewPassword" name="new_password" placeholder="كلمة المرور الجديدة" />
+            <button type="button" class="toggle-password" data-target="specialistNewPassword" aria-label="عرض كلمة المرور">
+              <i class="fa-solid fa-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-primary">حفظ التغييرات المهنية 💾</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- الفوتر -->
+  <footer class="app-footer">
+    <div class="footer-links">
+      <a href="#">عن منصة بصيرة</a>
+      <a href="#">الشروط والأحكام</a>
+      <a href="#">سياسة الخصوصية</a>
+      <a href="#">الدعم الفني</a>
+    </div>
+    <p class="copyright">&copy; 2026 منصة بصيرة. جميع الحقوق محفوظة.</p>
+  </footer>
+
+  <!-- السكربتات البرمجية -->
+  <script src="specialist-script.js"></script>
+  <script src="showPass_script.js"></script>
+
+</body>
+</html>

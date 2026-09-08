@@ -9,8 +9,8 @@ bassira-API.txt
 send_otp.php
 send_reset_otp.php
 
-#FILE API
+# FILE API
 contact.php
 
-# استثناء مجلد الأدمن من الرفع إلى غيتهاب
+# Exclude Admin Folder
 admin/
