@@ -229,6 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
 // ==========================================
 
 // جلب طلبات المواعيد
+// جلب طلبات المواعيد مع أزرار القبول والرفض
 async function loadAppointments() {
   const container = document.getElementById('appointmentsContainer');
   if (!container) return;
@@ -242,11 +243,32 @@ async function loadAppointments() {
       result.data.forEach(item => {
         const div = document.createElement('div');
         div.className = 'appointment-card';
+
+        // صياغة شارة الحالة أو أزرار اتخاذ القرار
+        let statusHtml = '';
+        if (item.status === 'PENDING') {
+          statusHtml = `
+            <div class="action-buttons" style="margin-top: 10px; display: flex; gap: 10px;">
+              <button class="btn-primary" onclick="updateAppointmentStatus(${item.id}, 'ACCEPTED')" style="background-color: #28a745;">
+                <i class="fas fa-check"></i> قبول
+              </button>
+              <button class="btn-primary" onclick="updateAppointmentStatus(${item.id}, 'REJECTED')" style="background-color: #dc3545;">
+                <i class="fas fa-times"></i> رفض
+              </button>
+            </div>
+          `;
+        } else if (item.status === 'ACCEPTED') {
+          statusHtml = `<p><strong>الحالة:</strong> <span style="color: green; font-weight: bold;">مقبول ✔</span></p>`;
+        } else if (item.status === 'REJECTED') {
+          statusHtml = `<p><strong>الحالة:</strong> <span style="color: red; font-weight: bold;">مرفوض ✖</span></p>`;
+        }
+
         div.innerHTML = `
           <h4><i class="fas fa-child"></i> الطفل: ${item.child_name}</h4>
           <p><strong>ولي الأمر:</strong> ${item.parent_name} (${item.parent_phone})</p>
           <p><strong>التاريخ والوقت:</strong> ${item.booking_date} | ${item.booking_time}</p>
           <p><strong>ملاحظات:</strong> ${item.notes || 'لا يوجد'}</p>
+          ${statusHtml}
         `;
         container.appendChild(div);
       });
@@ -259,6 +281,34 @@ async function loadAppointments() {
     }
   } catch (err) {
     console.error('خطأ جلب المواعيد:', err);
+  }
+}
+
+// دالة تغيير حالة الموعد
+async function updateAppointmentStatus(appointmentId, status) {
+  const actionText = status === 'ACCEPTED' ? 'قبول' : 'رفض';
+  if (!confirm(`هل أنت تأكد من رغبتك في ${actionText} هذا الموعد؟`)) return;
+
+  const formData = new FormData();
+  formData.append('appointment_id', appointmentId);
+  formData.append('status', status);
+
+  try {
+    const res = await fetch('update_appointment_status.php', {
+      method: 'POST',
+      body: formData
+    });
+    const result = await res.json();
+
+    if (result.status === 'success') {
+      alert('✅ ' + result.message);
+      loadAppointments(); // إعادة تحميل المواعيد لتطبيق التغيير مباشرة
+    } else {
+      alert('❌ ' + result.message);
+    }
+  } catch (err) {
+    console.error('خطأ أثناء تحديث حالة الموعد:', err);
+    alert('❌ حدث خطأ في الاتصال بالسيرفر.');
   }
 }
 
