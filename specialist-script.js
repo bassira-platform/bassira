@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-  // --- 1. إدارة التنقل بين التبويبات (Tabs Navigation) ---
+  // --- 1. إدارة التنقل بين التبويبات وتفعيل الجلب الديناميكي ---
   const tabButtons = document.querySelectorAll('.tab-btn');
   const tabContents = document.querySelectorAll('.tab-content');
 
@@ -15,6 +15,13 @@ document.addEventListener('DOMContentLoaded', () => {
       const targetElement = document.getElementById(targetTab);
       if (targetElement) {
         targetElement.classList.remove('hidden');
+      }
+
+      // جلب البيانات بحسب التبويب النشط
+      if (targetTab === 'appointments-section') {
+        loadAppointments();
+      } else if (targetTab === 'medical-files-section') {
+        loadMedicalFiles();
       }
     });
   });
@@ -83,17 +90,14 @@ document.addEventListener('DOMContentLoaded', () => {
           if (clinicAddressInput) clinicAddressInput.value = data.clinic_address || '';
           if (avatarPreview && data.avatar_url) avatarPreview.src = data.avatar_url;
 
-          // بناء خيارات القائمة المنسدلة للتخصصات ديناميكياً
           if (specialtySelect) {
             specialtySelect.innerHTML = '<option value="" disabled>اختر التخصص...</option>';
-            
-            // إضافة التخصصات المجلوبة من قاعدة البيانات
             specialties.forEach(spec => {
               const option = document.createElement('option');
               option.value = spec;
               option.textContent = spec;
               if (spec === data.specialist_type) {
-                option.selected = true; // تحديد تخصص الأخصائي الحالي
+                option.selected = true;
               }
               specialtySelect.appendChild(option);
             });
@@ -103,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
       .catch(err => console.error('خطأ في جلب بيانات الأخصائي:', err));
   }
 
-  // --- 5. حفظ التغييرات للملف المهني (POST via AJAX) ---
+  // --- 5. حفظ التغييرات للملف المهني ---
   const specialistProfileForm = document.getElementById('specialistProfileForm');
   if (specialistProfileForm) {
     specialistProfileForm.addEventListener('submit', async (e) => {
@@ -128,7 +132,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (result.status === 'success') {
           alert('✅ ' + result.message);
           closeModal('specialistProfileModal');
-          loadSpecialistProfile(); // إعادة تحميل البيانات المحدثة
+          loadSpecialistProfile();
         } else {
           alert('❌ ' + (result.message || 'تعذر حفظ التغييرات.'));
         }
@@ -144,7 +148,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // --- 6. معاينة صورة الملف الشخصي عند الاختيار ---
+  // --- 6. معاينة صورة الملف الشخصي ---
   const specialistAvatarInput = document.getElementById('specialistAvatarInput');
   const specialistAvatarPreview = document.getElementById('specialistAvatarPreview');
 
@@ -209,7 +213,88 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // تشغيل الاستعلام الأولي لجلب البيانات عند التحميل
+  // --- 9. الاستدعاء الأولي عند تحميل الصفحة ---
   loadSpecialistProfile();
+  loadAppointments(); // تحميل المواعيد مباشرة لأن تبويبتها هي النشطة افتراضياً
+
+  // ربط فلتر اختيار الطفل
+  document.getElementById('filterChildSelect')?.addEventListener('change', (e) => {
+    loadMedicalFiles(e.target.value);
+  });
 
 });
+
+// ==========================================
+// الدوال الخارجية (Global Functions)
+// ==========================================
+
+// جلب طلبات المواعيد
+async function loadAppointments() {
+  const container = document.getElementById('appointmentsContainer');
+  if (!container) return;
+
+  try {
+    const res = await fetch('get_specialist_appointments.php');
+    const result = await res.json();
+
+    if (result.status === 'success' && result.data.length > 0) {
+      container.innerHTML = '';
+      result.data.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'appointment-card';
+        div.innerHTML = `
+          <h4><i class="fas fa-child"></i> الطفل: ${item.child_name}</h4>
+          <p><strong>ولي الأمر:</strong> ${item.parent_name} (${item.parent_phone})</p>
+          <p><strong>التاريخ والوقت:</strong> ${item.booking_date} | ${item.booking_time}</p>
+          <p><strong>ملاحظات:</strong> ${item.notes || 'لا يوجد'}</p>
+        `;
+        container.appendChild(div);
+      });
+    } else {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon"><i class="fas fa-calendar-times"></i></div>
+          <h3>لا توجد مواعيد محجوزة حالياً</h3>
+        </div>`;
+    }
+  } catch (err) {
+    console.error('خطأ جلب المواعيد:', err);
+  }
+}
+
+// جلب المستندات والتقارير الطبية
+async function loadMedicalFiles(childId = 'all') {
+  const container = document.getElementById('medicalFilesContainer');
+  if (!container) return;
+
+  try {
+    const res = await fetch(`get_specialist_files.php?child_id=${childId}`);
+    const result = await res.json();
+
+    if (result.status === 'success' && result.data.length > 0) {
+      container.innerHTML = '';
+      result.data.forEach(file => {
+        const div = document.createElement('div');
+        div.className = 'file-card';
+        div.setAttribute('data-file', file.file_path);
+        div.setAttribute('data-type', file.file_type);
+
+        div.innerHTML = `
+          <div class="file-icon"><i class="fas ${file.file_type === 'pdf' ? 'fa-file-pdf' : 'fa-file-image'}"></i></div>
+          <h4>${file.file_title}</h4>
+          <p>الطفل: ${file.child_name}</p>
+          <button class="btn-primary view-btn"><i class="fas fa-eye"></i> معاينة المستند</button>
+        `;
+        container.appendChild(div);
+      });
+    } else {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon"><i class="fas fa-folder-open"></i></div>
+          <h3>لا توجد ملفات مرفوعة لهذا الطفل</h3>
+        </div>`;
+    }
+  } catch (err) {
+    console.error('خطأ جلب الملفات:', err);
+  }
+}

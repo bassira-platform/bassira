@@ -309,6 +309,7 @@
     </div>
     
     <form id="bookingForm">
+      <!-- معرف الأخصائي -->
       <input type="hidden" id="bookingSpecialistId" name="specialist_id">
       
       <div class="form-group">
@@ -320,12 +321,14 @@
 
       <div class="form-group">
         <label>تاريخ الموعد:</label>
-        <input type="date" id="bookingDate" name="appointment_date" required>
+        <!-- تعديل name من appointment_date إلى booking_date -->
+        <input type="date" id="bookingDate" name="booking_date" required>
       </div>
 
       <div class="form-group">
         <label>الوقت:</label>
-        <input type="time" id="bookingTime" name="appointment_time" required>
+        <!-- تعديل name من appointment_time إلى booking_time -->
+        <input type="time" id="bookingTime" name="booking_time" required>
       </div>
 
       <div class="form-group">
