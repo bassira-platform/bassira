@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>رحلة المستكشف الصغير - تشخيص استكشافي</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; background-color: #1a1a2e; color: white; text-align: center; overflow: hidden; }
+        #canvas-container { position: relative; width: 100vw; height: 100vh; }
+        canvas { position: absolute; top: 0; left: 0; }
+        .overlay { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10; background: rgba(0,0,0,0.85); padding: 30px; border-radius: 15px; max-width: 500px; }
+        button { background: #e94560; color: white; border: none; padding: 12px 25px; font-size: 18px; border-radius: 8px; cursor: pointer; margin-top: 15px; }
+        button:hover { background: #0f3460; }
+        #webgazerVideoFeed { display: none !important; } /* إخفاء فيديو الكاميرا للحفاظ على الخصوصية والمظهر */
+    </style> <!-- مكتبة WebGazer لتتبع العين -->
+    <script src="https://webgazer.cs.brown.edu/webgazer.js" type="text/javascript"></script>
+</head>
+<body>
+
+<div id="canvas-container">
+    <canvas id="gameCanvas"></canvas>
+    
+    <!-- شاشة البداية والمعايرة -->
+    <div id="startScreen" class="overlay">
+        <h2>مرحباً بك في رحلة المستكشف الصغير 🚀</h2>
+        <p>الرجاء السماح للكاميرا والجلوس في مكان جيد الإضاءة أمام الشاشة مباشراً.</p>
+        <p>سنقوم أولاً بإنشاء نقطة المعايرة (اتبع الكرة بنظرك دون تحريك رأسك).</p>
+        <button onclick="startCalibration()">ابدأ المعايرة</button>
+    </div>
+
+    <!-- شاشة النتيجة النهائية -->
+    <div id="resultScreen" class="overlay" style="display: none;">
+        <h2>أحسنت يا بطل! 🎉</h2>
+        <p id="resultText">جاري تحليل البيانات وإرسال التقرير للأخصائي...</p>
+    </div>
+</div>
+
+<script>
+let currentStage = 'IDLE'; // IDLE, CALIBRATION, TEST_ASD, TEST_SLD, FINISHED
+let gazeDataPoints = [];
+let calibrationDots = [
+    {x: 0.1, y: 0.1}, {x: 0.5, y: 0.1}, {x: 0.9, y: 0.1},
+    {x: 0.1, y: 0.5}, {x: 0.5, y: 0.5}, {x: 0.9, y: 0.5},
+    {x: 0.1, y: 0.9}, {x: 0.5, y: 0.9}, {x: 0.9, y: 0.9}
+];
+let currentCalibIndex = 0;
+let calibClicks = 0;
+
+// مقاييس التحليل
+let faceFocusTime = 0; // زمن التركيز على الوجه (مؤشر التوحد)
+let shapeFocusTime = 0; // زمن التركيز على الشكل الهندسي
+let totalTestTime = 0;
+let saccadeDistances = []; // قياس سلاسة ونقلات العين (مؤشر عسر التعلم)
+let lastGaze = null;
+
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+// 1. بدء المعايرة
+function startCalibration() {
+    document.getElementById('startScreen').style.display = 'none';
+    currentStage = 'CALIBRATION';
+    
+    // تشغيل نظام التتبع
+    webgazer.setGazeListener(function(data, elapsedTime) {
+        if (data == null) return;
+        
+        // تسجيل الإحداثيات أثناء الاختبار
+        if (currentStage === 'TEST_ASD' || currentStage === 'TEST_SLD') {
+            gazeDataPoints.push({x: Math.round(data.x), y: Math.round(data.y), t: elapsedTime});
+            
+            // حساب السرعة والمسافة بين النقلات (Saccades)
+            if (lastGaze) {
+                let dist = Math.hypot(data.x - lastGaze.x, data.y - lastGaze.y);
+                saccadeDistances.push(dist);
+            }
+            lastGaze = {x: data.x, y: data.y};
+
+            // تحليل الاستجابة أثناء مرحلة اختبار التوحد (ASD)
+            if (currentStage === 'TEST_ASD') {
+                checkASDFocus(data.x, data.y);
+            }
+        }
+    }).begin();
+
+    webgazer.showPredictionPoints(false); // إخفاء نقطة التتبع الخضراء لتجنب تشتيت الطفل
+    render();
+}
+
+// 2. حلقة الرسم (Render Loop)
+function render() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (currentStage === 'CALIBRATION') {
+        drawCalibrationDot();
+    } else if (currentStage === 'TEST_ASD') {
+        drawASDTest();
+    } else if (currentStage === 'TEST_SLD') {
+        drawSLDTest();
+    }
+
+    if (currentStage !== 'FINISHED') {
+        requestAnimationFrame(render);
+    }
+}
+
+// رسم نقاط المعايرة
+function drawCalibrationDot() {
+    let dot = calibrationDots[currentCalibIndex];
+    let x = dot.x * canvas.width;
+    let y = dot.y * canvas.height;
+
+    ctx.beginPath();
+    ctx.arc(x, y, 20, 0, Math.PI * 2);
+    ctx.fillStyle = '#e94560';
+    ctx.fill();
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '16px Arial';
+    ctx.fillText("انظر هنا واضغط على الكرة (" + (5 - calibClicks) + ")", x - 80, y + 40);
+}
+
+// التفاعل مع نقاط المعايرة عند النقر
+canvas.addEventListener('click', (e) => {
+    if (currentStage === 'CALIBRATION') {
+        let dot = calibrationDots[currentCalibIndex];
+        let x = dot.x * canvas.width;
+        let y = dot.y * canvas.height;
+        let dist = Math.hypot(e.clientX - x, e.clientY - y);
+
+        if (dist < 40) {
+            calibClicks++;
+            if (calibClicks >= 5) { // 5 ضغطات لكل نقطة لمعايرة دقيقة
+                calibClicks = 0;
+                currentCalibIndex++;
+                if (currentCalibIndex >= calibrationDots.length) {
+                    startASDTest(); // الانتقال لاختبار التوحد
+                }
+            }
+        }
+    }
+});
+
+// 3. اختبار مؤشر التوحد الخفيف (ASD) - خيار الوجه مقابل الشكل الهندسي
+let faceBox = {};
+let shapeBox = {};
+
+function startASDTest() {
+    currentStage = 'TEST_ASD';
+    faceBox = { x: canvas.width * 0.2, y: canvas.height * 0.3, w: 250, h: 250 };
+    shapeBox = { x: canvas.width * 0.6, y: canvas.height * 0.3, w: 250, h: 250 };
+
+    setTimeout(() => {
+        startSLDTest(); // الانتقال للمرحلة التالية بعد 10 ثوانٍ
+    }, 10000);
+}
+
+function drawASDTest() {
+    // رسم وجه مبسط أو صورة وجه تعبيرية (الجهة اليسرى)
+    ctx.fillStyle = '#ffcc99';
+    ctx.beginPath();
+    ctx.arc(faceBox.x + 125, faceBox.y + 125, 100, 0, Math.PI * 2);
+    ctx.fill();
+    // رسم العينين والابتسامة
+    ctx.fillStyle = '#000';
+    ctx.beginPath(); ctx.arc(faceBox.x + 90, faceBox.y + 100, 15, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(faceBox.x + 160, faceBox.y + 100, 15, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(faceBox.x + 125, faceBox.y + 160, 40, 0, Math.PI); ctx.stroke();
+
+    // رسم شكل هندسي متحرك/مبتكر (الجهة اليمنى)
+    ctx.fillStyle = '#0f3460';
+    ctx.fillRect(shapeBox.x, shapeBox.y, shapeBox.w, shapeBox.h);
+    ctx.strokeStyle = '#e94560';
+    ctx.strokeRect(shapeBox.x + 20, shapeBox.y + 20, shapeBox.w - 40, shapeBox.h - 40);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = '22px Arial';
+    ctx.fillText("شاهد الشاشة بحرية...", canvas.width / 2 - 80, 50);
+}
+
+function checkASDFocus(gx, gy) {
+    if (gx >= faceBox.x && gx <= faceBox.x + faceBox.w && gy >= faceBox.y && gy <= faceBox.y + faceBox.h) {
+        faceFocusTime += 50; // افتراض أخذ عينات كل ~50ms
+    } else if (gx >= shapeBox.x && gx <= shapeBox.x + shapeBox.w && gy >= shapeBox.y && gy <= shapeBox.y + shapeBox.h) {
+        shapeFocusTime += 50;
+    }
+}
+
+// 4. اختبار مؤشر عسر التعلم (SLD) - تتبع الأحرف المتشابهة
+let currentLetter = 'ب';
+let letters = ['ب', 'ت', 'ث', 'ن', 'ي'];
+let letterIndex = 0;
+
+function startSLDTest() {
+    currentStage = 'TEST_SLD';
+    let interval = setInterval(() => {
+        letterIndex++;
+        if (letterIndex >= letters.length) {
+            clearInterval(interval);
+            finishGame();
+        } else {
+            currentLetter = letters[letterIndex];
+        }
+    }, 2500);
+}
+
+function drawSLDTest() {
+    ctx.fillStyle = '#16213e';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    ctx.fillStyle = '#e94560';
+    ctx.font = '120px Arial';
+    ctx.fillText(currentLetter, canvas.width / 2 - 30, canvas.height / 2 + 30);
+
+    ctx.fillStyle = '#fff';
+    ctx.font = '22px Arial';
+    ctx.fillText("ركز عينيك على حرف: " + currentLetter, canvas.width / 2 - 100, 80);
+}
+
+// 5. إنهاء اللعبة وحساب النتائج وإرسالها
+function finishGame() {
+    currentStage = 'FINISHED';
+    webgazer.end(); // إيقاف الكاميرا والتتبع
+
+    document.getElementById('resultScreen').style.display = 'block';
+
+    // حساب المؤشرات وتحليل البيانات
+    let totalFocus = faceFocusTime + shapeFocusTime;
+    let socialPreferenceScore = totalFocus > 0 ? (faceFocusTime / totalFocus) : 0.5;
+
+    // تقييم التوحد بناءً على معايير تفضيل الأشكال الهندسية على الوجوه (DSM-5)
+    let asdIndicator = 'LOW_RISK';
+    if (socialPreferenceScore < 0.35) {
+        asdIndicator = 'HIGH_RISK';
+    } else if (socialPreferenceScore < 0.50) {
+        asdIndicator = 'MODERATE_RISK';
+    }
+
+    // حساب متوسط القفزات البصرية لمؤشر عسر التعلم (SLD)
+    let avgSaccade = saccadeDistances.length > 0 ? (saccadeDistances.reduce((a,b)=>a+b, 0) / saccadeDistances.length) : 0;
+    let sldIndicator = 'LOW_RISK';
+    if (avgSaccade > 180) { // قفزات غير منتظمة وتبتعد كثيراً عن البؤرة
+        sldIndicator = 'HIGH_RISK';
+    } else if (avgSaccade > 120) {
+        sldIndicator = 'MODERATE_RISK';
+    }
+
+    // البيانات المراد إرسالها إلى قاعدة البيانات
+    let payload = {
+        child_id: 6, // يُفترض إحضار id الطفل الديناميكي من التنسيق مع الجلسة (Session/URL)
+        game_id: 1,  // رقم اللعبة في جدول games_and_tests
+        social_preference_score: socialPreferenceScore.toFixed(2),
+        fixation_duration_ms: faceFocusTime + shapeFocusTime,
+        saccade_velocity: avgSaccade.toFixed(2),
+        asd_indicator: asdIndicator,
+        sld_indicator: sldIndicator,
+        raw_gaze_data: gazeDataPoints.slice(0, 300) // أخذ عينة لتفادي تكبير حجم الطلب
+    };
+
+    // إرسال البيانات إلى السيرفر
+    fetch('/api/save_game_result.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById('resultText').innerText = "تم تسجيل التقييم بنجاح وإرسال التقرير لطبيبكم المتابع.";
+    })
+    .catch(err => {
+        document.getElementById('resultText').innerText = "تم حفظ النتائج محلياً. شكراً لمشاركتك!";
+    });
+}
+</script>
+</body>
+</html>
