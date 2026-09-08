@@ -4,28 +4,47 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>مغامرة البطل الصغير - رحلة الاستكشاف</title>
-    <!-- مكتبات Phaser 3 + WebGazer + Tailwind CSS -->
+    <!-- مكتبات Phaser 3 + WebGazer -->
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
     <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { margin: 0; background-color: #090d16; overflow: hidden; font-family: 'Segoe UI', system-ui, sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #090d16; color: #fff; overflow: hidden; }
         #webgazerVideoFeed, #webgazerVideoCanvas, #webgazerFaceOverlay, #webgazerFaceFeedbackBox { display: none !important; }
-        .game-overlay { position: absolute; inset: 0; z-index: 50; display: flex; align-items: center; justify-content: center; }
+        
+        .game-overlay { 
+            position: absolute; inset: 0; z-index: 50; display: flex; 
+            align-items: center; justify-content: center; 
+            background: rgba(9, 13, 22, 0.92); backdrop-filter: blur(8px); 
+        }
+        .card { 
+            background: #0f172a; border: 1px solid rgba(99, 102, 241, 0.3); 
+            border-radius: 24px; padding: 32px; max-width: 450px; width: 90%; 
+            text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.6); 
+        }
+        .card-icon { 
+            width: 80px; height: 80px; background: rgba(79, 70, 229, 0.2); 
+            border-radius: 50%; display: flex; align-items: center; justify-content: center; 
+            margin: 0 auto 20px auto; border: 1px solid rgba(99, 102, 241, 0.4); font-size: 36px; 
+        }
+        .btn-start { 
+            width: 100%; padding: 16px; background: linear-gradient(135deg, #10b981 0%, #0d9488 100%); 
+            color: #fff; font-size: 18px; font-weight: bold; border: none; border-radius: 16px; 
+            cursor: pointer; transition: transform 0.2s, background 0.2s; margin-top: 20px; 
+        }
+        .btn-start:hover { transform: scale(1.02); background: linear-gradient(135deg, #059669 0%, #0f766e 100%); }
     </style>
 </head>
 <body>
 
-<div id="ui-overlay" class="game-overlay bg-slate-950/90 backdrop-blur-md">
-    <div class="max-w-md w-full bg-slate-900 border border-indigo-500/30 rounded-3xl p-8 text-center shadow-2xl">
-        <div class="w-20 h-20 bg-indigo-600/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-indigo-500/40">
-            <span class="text-4xl">🚀</span>
-        </div>
-        <h1 class="text-3xl font-black text-white mb-3">مغامرة الاستكشاف البصري</h1>
-        <p class="text-slate-400 text-sm mb-6 leading-relaxed">
+<div id="ui-overlay" class="game-overlay">
+    <div class="card">
+        <div class="card-icon">🚀</div>
+        <h1 style="font-size: 26px; margin-bottom: 10px;">مغامرة الاستكشاف البصري</h1>
+        <p style="color: #94a3b8; font-size: 14px; line-height: 1.6;">
             ساعد البطل في جمع النجوم واستكشاف الغابة. يرجى الجلوس أمام الكاميرا بوضوح.
         </p>
-        <button id="start-btn" onclick="startGameEngine()" class="w-full py-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-lg rounded-2xl shadow-lg transition-all transform active:scale-95">
+        <button id="start-btn" onclick="startGameEngine()" class="btn-start">
             ابدأ المغامرة الآن
         </button>
     </div>
@@ -48,59 +67,10 @@ let gazeMetrics = {
 };
 
 // ==========================================
-// 2. محرك اللعبة الرئيسي Phaser 3
+// 2. تعريف مشاهد اللعبة (Phaser Scenes) أولاً
 // ==========================================
-const config = {
-    type: Phaser.AUTO,
-    width: window.innerWidth,
-    height: window.innerHeight,
-    parent: 'phaser-game',
-    physics: { default: 'arcade', arcade: { debug: false } },
-    scene: [CalibrationScene, ASDTestScene, SLDTestScene, EndScene]
-};
 
-let game;
-
-async function startGameEngine() {
-    document.getElementById('ui-overlay').style.display = 'none';
-    
-    // تشغيل محرك الألعاب أولاً
-    game = new Phaser.Game(config);
-
-    // تهيئة WebGazer مع تفادي أخطاء الاستضافة 404
-    try {
-        // إيقاف التتبع التجريبي القديم لتجنب تعارض الـ Promises
-        if (typeof webgazer !== 'undefined') {
-            await webgazer.setRegression('ridge') /* استخدام خوارزمية Ridge المستقرة بدلاً من النماذج الثقيلة */
-                .setTracker('TBM') /* أسلوب تتبع أخف وزناً لمنع أخطاء face_mesh */
-                .setGazeListener((data, elapsedTime) => {
-                    if (data) {
-                        gazeTracker.x = data.x;
-                        gazeTracker.y = data.y;
-                        
-                        if (gazeTracker.active) {
-                            gazeMetrics.gazeLogs.push({ x: Math.round(data.x), y: Math.round(data.y), t: elapsedTime });
-                            
-                            if (gazeMetrics.lastPos) {
-                                let dist = Phaser.Math.Distance.Between(data.x, data.y, gazeMetrics.lastPos.x, gazeMetrics.lastPos.y);
-                                gazeMetrics.saccadeDistances.push(dist);
-                            }
-                            gazeMetrics.lastPos = { x: data.x, y: data.y };
-                        }
-                    }
-                }).begin();
-
-            webgazer.showPredictionPoints(false);
-            webgazer.showVideo(false);
-        }
-    } catch (err) {
-        console.warn("تنبيه: تعذر تحميل تتبع العين الكامل، يتم الآن التشغيل في وضع التفاعل المباشر:", err);
-    }
-}
-
-// ==========================================
 // Scene 1: مرحلة المعايرة التفاعلية (Calibration)
-// ==========================================
 class CalibrationScene extends Phaser.Scene {
     constructor() { super('CalibrationScene'); }
 
@@ -124,7 +94,6 @@ class CalibrationScene extends Phaser.Scene {
         this.updateStarPosition();
 
         this.star.on('pointerdown', (pointer) => {
-            // استخدام موضع النقر كمؤشر احتياطي في حال عدم استجابة الكاميرا
             gazeTracker.x = pointer.x;
             gazeTracker.y = pointer.y;
 
@@ -148,9 +117,7 @@ class CalibrationScene extends Phaser.Scene {
     }
 }
 
-// ==========================================
 // Scene 2: اختبار التوحد DSM-5 (ASD Visual Preference)
-// ==========================================
 class ASDTestScene extends Phaser.Scene {
     constructor() { super('ASDTestScene'); }
 
@@ -175,7 +142,6 @@ class ASDTestScene extends Phaser.Scene {
 
         this.tweens.add({ targets: [rect1, rect2], angle: 360, duration: 4000, repeat: -1 });
 
-        // تتبع مؤشر الماوس بصفة احتياطية عند غياب التتبع البصري
         this.input.on('pointermove', (pointer) => {
             if (!gazeTracker.active) {
                 gazeTracker.x = pointer.x;
@@ -200,9 +166,7 @@ class ASDTestScene extends Phaser.Scene {
     }
 }
 
-// ==========================================
 // Scene 3: اختبار عسر التعلم DSM-5 (SLD Tracking)
-// ==========================================
 class SLDTestScene extends Phaser.Scene {
     constructor() { super('SLDTestScene'); }
 
@@ -239,9 +203,7 @@ class SLDTestScene extends Phaser.Scene {
     }
 }
 
-// ==========================================
 // Scene 4: المعالجة وإرسال التقرير التشخيصي
-// ==========================================
 class EndScene extends Phaser.Scene {
     constructor() { super('EndScene'); }
 
@@ -263,7 +225,6 @@ class EndScene extends Phaser.Scene {
         if (avgSaccade > 160) sldStatus = 'HIGH_RISK';
         else if (avgSaccade > 110) sldStatus = 'MODERATE_RISK';
 
-        // إرسال النتيجة إلى قاعدة البيانات
         fetch('/api/save_game_result.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -282,6 +243,56 @@ class EndScene extends Phaser.Scene {
         this.add.text(this.scale.width / 2, this.scale.height / 2, 'تم إكمال التقييم بنجاح! 🏆\nجاري حفظ البيانات في ملفك الطبي...', {
             fontSize: '28px', color: '#10b981', align: 'center', fontStyle: 'bold'
         }).setOrigin(0.5);
+    }
+}
+
+// ==========================================
+// 3. تهيئة إعدادات المحرك وتنزيل اللعبة
+// ==========================================
+const config = {
+    type: Phaser.AUTO,
+    width: window.innerWidth,
+    height: window.innerHeight,
+    parent: 'phaser-game',
+    physics: { default: 'arcade', arcade: { debug: false } },
+    scene: [CalibrationScene, ASDTestScene, SLDTestScene, EndScene]
+};
+
+let game;
+
+async function startGameEngine() {
+    document.getElementById('ui-overlay').style.display = 'none';
+    
+    // تشغيل محرك الألعاب
+    game = new Phaser.Game(config);
+
+    // تشغيل التتبع
+    try {
+        if (typeof webgazer !== 'undefined') {
+            await webgazer.setRegression('ridge')
+                .setTracker('TBM')
+                .setGazeListener((data, elapsedTime) => {
+                    if (data) {
+                        gazeTracker.x = data.x;
+                        gazeTracker.y = data.y;
+                        
+                        if (gazeTracker.active) {
+                            gazeMetrics.gazeLogs.push({ x: Math.round(data.x), y: Math.round(data.y), t: elapsedTime });
+                            
+                            if (gazeMetrics.lastPos) {
+                                let dist = Phaser.Math.Distance.Between(data.x, data.y, gazeMetrics.lastPos.x, gazeMetrics.lastPos.y);
+                                gazeMetrics.saccadeDistances.push(dist);
+                            }
+                            gazeMetrics.lastPos = { x: data.x, y: data.y };
+                        }
+                    }
+                }).begin();
+
+            webgazer.showPredictionPoints(false);
+            webgazer.showVideo(false);
+        }
+    } catch (err) {
+        console.warn("تنبيه: التتبع يعمل في وضع التفاعل الاحتياطي:", err);
     }
 }
 </script>
