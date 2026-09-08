@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>صفحة رئيسية- منصة بصيرة</title>
+  <title>صفحة رئيسية - منصة بصيرة</title>
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="parent-style.css">
@@ -25,7 +25,7 @@
       <div id="userDropdown" class="dropdown-content hidden">
         <a href="#profile" class="dropdown-item" id="openProfileBtn"><i class="fas fa-user-circle"></i> الملف الشخصي</a>
         <a href="#settings" class="dropdown-item"><i class="fas fa-cog"></i> الإعدادات</a>
-        <hr>
+        <hr style="margin: 4px 0; border: none; border-top: 1px solid var(--border);">
         <a href="logout.php" class="dropdown-item logout-link"><i class="fas fa-sign-out-alt"></i> تسجيل الخروج</a>
       </div>
     </div>
@@ -46,9 +46,11 @@
 
     <!-- قسم 1: إدارة الأطفال -->
     <section id="children-section" class="tab-content active">
-      <button class="btn-add-child-large" id="openAddChildModal">
-        <i class="fas fa-plus"></i> إضافة طفل جديد
-      </button>
+      <div class="section-header">
+        <button class="btn-add-child-large" id="openAddChildModal">
+          <i class="fas fa-plus"></i> إضافة طفل جديد
+        </button>
+      </div>
       
       <!-- سيتم ملؤه ديناميكياً ببطاقات الأطفال أو الواجهة الفارغة -->
       <div id="childrenContainer" class="children-grid">
@@ -79,12 +81,12 @@
           <label for="childFullName">الاسم الكامل للطفل</label>
           <input type="text" id="childFullName" name="child_name" required placeholder="أدخل اسم الطفل">
         </div>
-        <div class="form-row">
-          <div class="form-group">
+        <div class="form-row" style="display: flex; gap: 10px;">
+          <div class="form-group" style="flex: 1;">
             <label for="childBirthDate">تاريخ الميلاد</label>
             <input type="date" id="childBirthDate" name="birth_date" required>
           </div>
-          <div class="form-group">
+          <div class="form-group" style="flex: 1;">
             <label for="childGender">الجنس</label>
             <select id="childGender" name="gender" required>
               <option value="">اختر الجنس</option>
@@ -102,7 +104,7 @@
             </button>
           </div>
         </div>
-        <button type="submit" class="btn-submit">إنشاء الحساب وتوليد UID 🚀</button>
+        <button type="submit" class="btn-submit btn-primary">إنشاء الحساب وتوليد UID 🚀</button>
       </form>
     </div>
   </div>
@@ -110,13 +112,13 @@
   <!-- النافذة المنبثقة 2: تعبئة/تحديث الملف الصحي -->
   <div id="healthRecordModal" class="modal hidden">
     <div class="modal-content">
-      <span class="close-btn" id="closeHealthModal">&times;</span>
+      <span class="close-modal" id="closeHealthModal">&times;</span>
       <h3><i class="fas fa-notes-medical"></i> تحديث الملف الصحي</h3>
       <form id="healthRecordForm">
         <input type="hidden" id="healthChildId" name="child_id">
 
         <div class="form-group">
-          <label>فصيلة الدم:</label>
+          <label for="bloodType">فصيلة الدم:</label>
           <select id="bloodType" name="blood_type">
             <option value="">غير محدد</option>
             <option value="A+">A+</option>
@@ -131,12 +133,12 @@
         </div>
 
         <div class="form-group">
-          <label>الحساسيات (إن وجدت):</label>
+          <label for="allergies">الحساسيات (إن وجدت):</label>
           <textarea id="allergies" name="allergies" placeholder="مثال: حساسية من البنسلين، أطعمة محددة..."></textarea>
         </div>
 
         <div class="form-group">
-          <label>الأمراض المزمنة / ملاحظات طبية:</label>
+          <label for="medicalConditions">الأمراض المزمنة / ملاحظات طبية:</label>
           <textarea id="medicalConditions" name="medical_conditions" placeholder="مثال: الربو، السكري..."></textarea>
         </div>
 
@@ -148,23 +150,23 @@
   <!-- النافذة المنبثقة 3: تعديل بيانات الطفل -->
   <div id="editChildModal" class="modal hidden">
     <div class="modal-content">
-      <span class="close-btn" id="closeEditChildModal">&times;</span>
+      <span class="close-modal" id="closeEditChildModal">&times;</span>
       <h3><i class="fas fa-user-edit"></i> تعديل بيانات الطفل</h3>
       <form id="editChildForm">
         <input type="hidden" id="editChildId" name="child_id">
         
         <div class="form-group">
-          <label>الاسم الكامل:</label>
+          <label for="editChildName">الاسم الكامل:</label>
           <input type="text" id="editChildName" name="full_name" required>
         </div>
 
         <div class="form-group">
-          <label>تاريخ الميلاد:</label>
+          <label for="editBirthDate">تاريخ الميلاد:</label>
           <input type="date" id="editBirthDate" name="birth_date" required>
         </div>
 
         <div class="form-group">
-          <label>الجنس:</label>
+          <label for="editGender">الجنس:</label>
           <select id="editGender" name="gender" required>
             <option value="MALE">ذكر</option>
             <option value="FEMALE">أنثى</option>
@@ -179,7 +181,7 @@
   <!-- النافذة المنبثقة 4: تعديل كلمة مرور الطفل -->
   <div id="editPasswordModal" class="modal hidden">
     <div class="modal-content">
-      <span class="close-btn" id="closeEditPasswordModal">&times;</span>
+      <span class="close-modal" id="closeEditPasswordModal">&times;</span>
       <h3><i class="fas fa-key"></i> تعديل كلمة مرور الطفل</h3>
       <form id="editPasswordForm">
         <input type="hidden" id="passwordChildId" name="child_id">

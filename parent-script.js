@@ -25,7 +25,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       const result = await res.json();
       
-      // التعديل هنا: التوافق مع استجابة logged_in أو status
       const isLoggedIn = result.logged_in === true || result.status === 'success';
       if (!isLoggedIn) {
         handleLogoutRedirect();
@@ -68,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // فتح نافذة الملف الشخصي
-  const profileLink = document.querySelector('a[href="#profile"]');
+  const profileLink = document.getElementById('openProfileBtn') || document.querySelector('a[href="#profile"]');
   const parentProfileModal = document.getElementById('parentProfileModal');
   const closeParentProfileModal = document.getElementById('closeParentProfileModal');
 
@@ -311,7 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
       children.forEach(child => {
         const card = document.createElement('div');
         card.className = 'child-card';
-        const isMale = String(child.gender).toUpperCase() === 'MALE';
+        const isMale = String(child.gender).toUpperCase() === 'MALE' || String(child.gender).toLowerCase() === 'male';
 
         const safeFullName = escapeHtml(child.full_name);
         const safeBirthDate = escapeHtml(child.birth_date);
@@ -328,8 +327,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <a href="javascript:void(0)" onclick="openHealthModal('${child.id}')" class="dropdown-item"><i class="fas fa-notes-medical"></i> الملف الصحي</a>
                 <a href="javascript:void(0)" onclick="editPassword('${child.id}')" class="dropdown-item"><i class="fas fa-key"></i> تعديل كلمة المرور</a>
                 <a href="javascript:void(0)" onclick="editInfo('${child.id}')" class="dropdown-item"><i class="fas fa-user-edit"></i> المعلومات الشخصية</a>
-                <hr style="margin: 4px 0; border: none; border-top: 1px solid #eee;">
-                <a href="javascript:void(0)" onclick="deleteChild('${child.id}', '${safeFullName}')" class="dropdown-item text-danger" style="color: #e74c3c;"><i class="fas fa-trash-alt"></i> حذف حساب الطفل</a>
+                <hr style="margin: 4px 0; border: none; border-top: 1px solid var(--border);">
+                <a href="javascript:void(0)" onclick="deleteChild('${child.id}', '${safeFullName}')" class="dropdown-item logout-link"><i class="fas fa-trash-alt"></i> حذف حساب الطفل</a>
               </div>
             </div>
           </div>
@@ -385,9 +384,9 @@ async function openHealthModal(childId) {
     const result = await res.json();
 
     if (result.status === 'success' && result.data) {
-      document.getElementById('bloodType').value = result.data.blood_type || '';
-      document.getElementById('allergies').value = result.data.allergies || '';
-      document.getElementById('medicalConditions').value = result.data.medical_conditions || '';
+      if (document.getElementById('bloodType')) document.getElementById('bloodType').value = result.data.blood_type || '';
+      if (document.getElementById('allergies')) document.getElementById('allergies').value = result.data.allergies || '';
+      if (document.getElementById('medicalConditions')) document.getElementById('medicalConditions').value = result.data.medical_conditions || '';
     }
   } catch (err) {
     console.warn('تعذر جلب بيانات ملف قديمة، فتح ملف فارغ:', err);
@@ -408,10 +407,10 @@ async function editInfo(childId) {
 
     if (result.status === 'success' && result.data) {
       const child = result.data;
-      document.getElementById('editChildId').value = child.id;
-      document.getElementById('editChildName').value = child.full_name;
-      document.getElementById('editBirthDate').value = child.birth_date;
-      document.getElementById('editGender').value = String(child.gender).toUpperCase();
+      if (document.getElementById('editChildId')) document.getElementById('editChildId').value = child.id;
+      if (document.getElementById('editChildName')) document.getElementById('editChildName').value = child.full_name;
+      if (document.getElementById('editBirthDate')) document.getElementById('editBirthDate').value = child.birth_date;
+      if (document.getElementById('editGender')) document.getElementById('editGender').value = String(child.gender).toUpperCase();
       document.getElementById('editChildModal').classList.remove('hidden');
     } else {
       alert('⚠️ ' + (result.message || 'تعذر جلب البيانات'));
@@ -439,7 +438,7 @@ async function deleteChild(childId, childName) {
   const menu = document.getElementById(`cardOptions-${childId}`);
   if (menu) menu.classList.add('hidden');
 
-  const confirmDelete = confirm(`⚠️ هل أنت تأكد من إرادتك لحذف حساب الطفل "${childName}" نهائياً؟\n\nتنبيه: لا يمكن التراجع عن هذه الخطوة وستفقد جميع البيانات الصحية والتحديثات.`);
+  const confirmDelete = confirm(`⚠️ هل أنت متأكد من حذف حساب الطفل "${childName}" نهائياً؟\n\nتنبيه: لا يمكن التراجع عن هذه الخطوة وستفقد جميع البيانات الصحية والتحديثات.`);
 
   if (!confirmDelete) return;
 
