@@ -161,7 +161,7 @@ if (isset($_GET['logout'])) {
                 <div class="game-body">
                     <h3>مغامرة فرفور في الغابة السحرية</h3>
                     <p>ساعد السنجاب فرفور في جمع الجوز واستكشاف الكائنات الحية والرموز بعينيك!</p>
-                    <a href="game.html?child_id=<?php echo $_SESSION['child_id']; ?>" class="play-btn">ابدأ اللعب الآن 🚀</a>
+                    <a href="game2.html?child_id=<?php echo $_SESSION['child_id']; ?>" class="play-btn">ابدأ اللعب الآن 🚀</a>
                 </div>
             </div>
 

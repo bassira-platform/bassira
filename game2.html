@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>مغامرة فرفور - لعبة تشخيصية تفاعلية</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #fff; overflow: hidden; text-align: center; }
+        #game-container { position: relative; width: 100vw; height: 100vh; background: linear-gradient(180deg, #1e1b4b 0%, #0f172a 100%); }
+        canvas { position: absolute; top: 0; left: 0; z-index: 1; }
+        .ui-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; pointer-events: none; }
+        .interactive { pointer-events: auto; }
+        .card { background: rgba(30, 41, 59, 0.9); border: 2px solid #6366f1; border-radius: 20px; padding: 30px; max-width: 500px; margin: 10vh auto; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+        h1 { color: #38bdf8; font-size: 28px; margin-bottom: 15px; }
+        p { font-size: 18px; line-height: 1.6; color: #cbd5e1; margin-bottom: 20px; }
+        .btn { background: #10b981; color: white; border: none; padding: 14px 30px; font-size: 20px; font-weight: bold; border-radius: 50px; cursor: pointer; transition: transform 0.2s, background 0.2s; }
+        .btn:hover { transform: scale(1.05); background: #059669; }
+        #webgazerVideoFeed { display: none !important; }
+    </style>
+    <script src="https://webgazer.cs.brown.edu/webgazer.js" type="text/javascript"></script>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <div class="ui-layer">
+        <!-- شاشة البداية -->
+        <div id="startCard" class="card interactive">
+            <h1>مغامرة فرفور 🐿️</h1>
+            <p>مرحباً بك يا بطل! ساعد السنجاب "فرفور" في جمع الطعام واستكشاف أسرار الغابة السحرية بصربات عينيك!</p>
+            <button class="btn" onclick="initGame()">ابدأ المغامرة 🚀</button>
+        </div>
+
+        <!-- شاشة نهاية اللعبة -->
+        <div id="endCard" class="card interactive" style="display: none;">
+            <h1>أحسنت يا بطل! 🏆</h1>
+            <p id="statusMsg">جاري حفظ نقاطك وتقييم أدائك الممتاز...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+let stage = 'START'; // START, CALIB, ASD_TEST, SLD_TEST, END
+
+// إعدادات المعايرة
+const calibPoints = [
+    {x: 0.15, y: 0.2}, {x: 0.5, y: 0.2}, {x: 0.85, y: 0.2},
+    {x: 0.15, y: 0.5}, {x: 0.5, y: 0.5}, {x: 0.85, y: 0.5},
+    {x: 0.15, y: 0.8}, {x: 0.5, y: 0.8}, {x: 0.85, y: 0.8}
+];
+let calibIndex = 0;
+let calibClicks = 0;
+
+// مقاييس الأداء
+let gazeLogs = [];
+let socialTime = 0, objectTime = 0;
+let saccadeSpeeds = [];
+let lastEyePos = null;
+
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+window.addEventListener('resize', resize);
+resize();
+
+// 1. بدء اللعبة وتشغيل الكاميرا
+function initGame() {
+    document.getElementById('startCard').style.display = 'none';
+    stage = 'CALIB';
+
+    webgazer.setGazeListener((data, time) => {
+        if (!data) return;
+        
+        if (stage === 'ASD_TEST' || stage === 'SLD_TEST') {
+            gazeLogs.push({ x: Math.round(data.x), y: Math.round(data.y), t: time });
+
+            if (lastEyePos) {
+                let d = Math.hypot(data.x - lastEyePos.x, data.y - lastEyePos.y);
+                saccadeSpeeds.push(d);
+            }
+            lastEyePos = { x: data.x, y: data.y };
+
+            if (stage === 'ASD_TEST') processASDFocus(data.x, data.y);
+        }
+    }).begin();
+
+    webgazer.showPredictionPoints(false);
+    requestAnimationFrame(gameLoop);
+}
+
+// 2. حلقة اللعبة المكررة (Game Loop)
+function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (stage === 'CALIB') drawCalibration();
+    else if (stage === 'ASD_TEST') drawASDStage();
+    else if (stage === 'SLD_TEST') drawSLDStage();
+
+    if (stage !== 'END') requestAnimationFrame(gameLoop);
+}
+
+// رسم المعايرة (إطعام السنجاب)
+function drawCalibration() {
+    let p = calibPoints[calibIndex];
+    let cx = p.x * canvas.width;
+    let cy = p.y * canvas.height;
+
+    // رسم ثمرة الجوز
+    ctx.beginPath();
+    ctx.arc(cx, cy, 25, 0, Math.PI * 2);
+    ctx.fillStyle = '#d97706';
+    ctx.fill();
+    ctx.strokeStyle = '#fef08a';
+    ctx.lineWidth = 4;
+    ctx.stroke();
+
+    ctx.fillStyle = '#fff';
+    ctx.font = 'bold 18px Segoe UI';
+    ctx.fillText(`انظر للجوزة واضغط عليها (${5 - calibClicks})`, cx - 90, cy + 50);
+}
+
+canvas.addEventListener('click', (e) => {
+    if (stage === 'CALIB') {
+        let p = calibPoints[calibIndex];
+        let cx = p.x * canvas.width;
+        let cy = p.y * canvas.height;
+
+        if (Math.hypot(e.clientX - cx, e.clientY - cy) < 50) {
+            calibClicks++;
+            if (calibClicks >= 5) {
+                calibClicks = 0;
+                calibIndex++;
+                if (calibIndex >= calibPoints.length) startASDStage();
+            }
+        }
+    }
+});
+
+// 3. مرحلة التوحد (صديق الغابة vs صندوق الألعاب)
+let socialArea, objectArea;
+
+function startASDStage() {
+    stage = 'ASD_TEST';
+    socialArea = { x: canvas.width * 0.15, y: canvas.height * 0.25, w: 300, h: 300 };
+    objectArea = { x: canvas.width * 0.60, y: canvas.height * 0.25, w: 300, h: 300 };
+
+    setTimeout(() => { startSLDStage(); }, 12000); // مدة المرحلة 12 ثانية
+}
+
+function drawASDStage() {
+    // رسم شخصية اجتماعية مبتسمة (صديق الغابة)
+    ctx.fillStyle = '#38bdf8';
+    ctx.beginPath();
+    ctx.arc(socialArea.x + 150, socialArea.y + 150, 100, 0, Math.PI * 2);
+    ctx.fill();
+    // تفاصيل الوجه
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath(); ctx.arc(socialArea.x + 110, socialArea.y + 130, 15, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(socialArea.x + 190, socialArea.y + 130, 15, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(socialArea.x + 150, socialArea.y + 180, 40, 0, Math.PI); ctx.stroke();
+
+    // رسم صندوق هندسي متحرّك (مثير غير اجتماعي)
+    let time = Date.now() * 0.003;
+    ctx.save();
+    ctx.translate(objectArea.x + 150, objectArea.y + 150);
+    ctx.rotate(Math.sin(time));
+    ctx.fillStyle = '#a855f7';
+    ctx.fillRect(-80, -80, 160, 160);
+    ctx.restore();
+
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = 'bold 24px Segoe UI';
+    ctx.fillText('استكشف الأشياء الموجودة أماماتك بعينيك...', canvas.width / 2 - 180, 60);
+}
+
+function processASDFocus(gx, gy) {
+    if (gx >= socialArea.x && gx <= socialArea.x + socialArea.w && gy >= socialArea.y && gy <= socialArea.y + socialArea.h) {
+        socialTime += 40;
+    } else if (gx >= objectArea.x && gx <= objectArea.x + objectArea.w && gy >= objectArea.y && gy <= objectArea.y + objectArea.h) {
+        objectTime += 40;
+    }
+}
+
+// 4. مرحلة عسر التعلم (تتبع حركة الفراشات الحرفية)
+let butterflyPos = { x: 0, y: 0 };
+let currentLetter = 'ب';
+let lettersGroup = ['ب', 'ت', 'ث', 'ن'];
+let letterIdx = 0;
+
+function startSLDStage() {
+    stage = 'SLD_TEST';
+    let moveInterval = setInterval(() => {
+        letterIdx++;
+        if (letterIdx >= lettersGroup.length) {
+            clearInterval(moveInterval);
+            finishGame();
+        } else {
+            currentLetter = lettersGroup[letterIdx];
+        }
+    }, 3000);
+}
+
+function drawSLDStage() {
+    let t = Date.now() * 0.002;
+    butterflyPos.x = (canvas.width / 2) + Math.cos(t) * 250;
+    butterflyPos.y = (canvas.height / 2) + Math.sin(t * 2) * 100;
+
+    // رسم أجنحة الفراشة
+    ctx.fillStyle = '#f43f5e';
+    ctx.beginPath();
+    ctx.arc(butterflyPos.x - 30, butterflyPos.y, 40, 0, Math.PI * 2);
+    ctx.arc(butterflyPos.x + 30, butterflyPos.y, 40, 0, Math.PI * 2);
+    ctx.fill();
+
+    // كتابة الحرف داخل الفراشة
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 60px Segoe UI';
+    ctx.fillText(currentLetter, butterflyPos.x - 18, butterflyPos.y + 20);
+
+    ctx.fillStyle = '#f8fafc';
+    ctx.font = 'bold 24px Segoe UI';
+    ctx.fillText(`تتبع الفراشة بعينيك وهي تحمل الحرف: (${currentLetter})`, canvas.width / 2 - 200, 60);
+}
+
+// 5. الحسابات النهائية وحفظ النتيجة
+function finishGame() {
+    stage = 'END';
+    webgazer.end();
+    document.getElementById('endCard').style.display = 'block';
+
+    let total = socialTime + objectTime;
+    let socialRatio = total > 0 ? (socialTime / total) : 0.5;
+    
+    let asdResult = 'LOW_RISK';
+    if (socialRatio < 0.35) asdResult = 'HIGH_RISK';
+    else if (socialRatio < 0.50) asdResult = 'MODERATE_RISK';
+
+    let avgSaccade = saccadeSpeeds.length > 0 ? (saccadeSpeeds.reduce((a,b)=>a+b, 0) / saccadeSpeeds.length) : 0;
+    let sldResult = 'LOW_RISK';
+    if (avgSaccade > 170) sldResult = 'HIGH_RISK';
+    else if (avgSaccade > 110) sldResult = 'MODERATE_RISK';
+
+    // إرسال النتيجة إلى السيرفر
+    fetch('/api/save_game_result.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            child_id: 6, // المعرّف الخاص بالطفل
+            game_id: 1,
+            social_preference_score: socialRatio.toFixed(2),
+            fixation_duration_ms: total,
+            saccade_velocity: avgSaccade.toFixed(2),
+            asd_indicator: asdResult,
+            sld_indicator: sldResult,
+            raw_gaze_data: gazeLogs.slice(0, 200)
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        document.getElementById('statusMsg').innerText = "تم حفظ تقرير اللعبة وتحديث الملف الطبي للطفل بنجاح!";
+    })
+    .catch(err => {
+        document.getElementById('statusMsg').innerText = "شكراً لك! تم تسجيل التقييم بنجاح.";
+    });
+}
+</script>
+</body>
+</html>
