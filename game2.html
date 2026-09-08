@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>حديقة الأشكال والألوان - للأطفال 3 سنوات</title>
 <style>
     * { 
@@ -10,6 +10,8 @@
         margin: 0; 
         padding: 0; 
         user-select: none; 
+        -webkit-user-select: none;
+        touch-action: manipulation;
     }
     body { 
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
@@ -17,21 +19,24 @@
         color: #fff; 
         overflow: hidden; 
         text-align: center; 
+        width: 100vw;
+        height: 100vh;
     }
     #game-container { 
         position: relative; 
-        width: 100vw; 
-        height: 100vh; 
+        width: 100%; 
+        height: 100%; 
         background: linear-gradient(180deg, #0284c7 0%, #0f172a 100%); 
     }
     canvas { 
         position: absolute; 
         top: 0; 
         left: 0; 
+        width: 100%;
+        height: 100%;
         z-index: 1; 
     }
     
-    /* جعل طبقة الواجهة مرنة لتوسيط العناصر في المنتصف تماماً */
     .ui-layer { 
         position: absolute; 
         top: 0; 
@@ -43,41 +48,41 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        padding: 20px;
     }
     
     .interactive { 
         pointer-events: auto; 
     }
     
-    /* ضبط البطاقات لتتمركز في منتصف الشاشة وبأبعاد متناسقة */
     .card { 
         background: rgba(15, 23, 42, 0.95); 
         border: 3px solid #38bdf8; 
         border-radius: 24px; 
-        padding: 30px; 
-        max-width: 480px; 
-        width: 90%; 
+        padding: 24px; 
+        max-width: 440px; 
+        width: 100%; 
         box-shadow: 0 20px 40px rgba(0,0,0,0.6); 
         margin: auto;
     }
     
     h1 { 
         color: #facc15; 
-        font-size: 32px; 
-        margin-bottom: 15px; 
+        font-size: clamp(22px, 5vw, 30px); 
+        margin-bottom: 12px; 
     }
     p { 
-        font-size: 20px; 
-        line-height: 1.6; 
+        font-size: clamp(16px, 4vw, 18px); 
+        line-height: 1.5; 
         color: #e2e8f0; 
-        margin-bottom: 25px; 
+        margin-bottom: 20px; 
     }
     .btn { 
         background: #10b981; 
         color: white; 
         border: none; 
-        padding: 16px 40px; 
-        font-size: 24px; 
+        padding: 14px 32px; 
+        font-size: clamp(18px, 4vw, 22px); 
         font-weight: bold; 
         border-radius: 50px; 
         cursor: pointer; 
@@ -106,7 +111,7 @@
         <!-- شاشة النهاية -->
         <div id="endCard" class="card interactive" style="display: none;">
             <h1>ممتاز جداً! 🏆</h1>
-            <p id="statusMsg">أنت بطل رائع! تم حفظ النتيجة بنجاح.</p>
+            <p id="statusMsg">أنت بطل رائع! جاري حفظ النتيجة...</p>
         </div>
     </div>
 </div>
@@ -115,30 +120,33 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const urlParams = new URLSearchParams(window.location.search);
-const childId = urlParams.get('child_id') || 6;
+const childId = parseInt(urlParams.get('child_id')) || 6;
 
-let stage = 'START'; // START, PLAY, END
+let stage = 'START'; 
 let balloons = [];
 let score = 0;
 let totalTaps = 0;
 let startTime = 0;
 let interactions = [];
 
-function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+function resize() { 
+    canvas.width = window.innerWidth; 
+    canvas.height = window.innerHeight; 
+}
 window.addEventListener('resize', resize);
 resize();
 
-// توليد بالونات ملونة بسيطة تناسب عمر 3 سنوات
 function createBalloon() {
     const colors = ['#f43f5e', '#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'];
     const shapes = ['circle', 'square'];
+    const minRadius = Math.min(canvas.width, canvas.height) * 0.08;
     return {
         x: Math.random() * (canvas.width - 120) + 60,
         y: canvas.height + 60,
-        radius: 45 + Math.random() * 15,
+        radius: Math.max(35, minRadius),
         color: colors[Math.floor(Math.random() * colors.length)],
         shape: shapes[Math.floor(Math.random() * shapes.length)],
-        speed: 1.5 + Math.random() * 1.5
+        speed: 1.2 + Math.random() * 1.3
     };
 }
 
@@ -148,14 +156,12 @@ function startGame() {
     score = 0;
     totalTaps = 0;
     balloons = [];
+    interactions = [];
     startTime = Date.now();
 
-    // إنشاء بالونات كل فترة
     for(let i = 0; i < 4; i++) balloons.push(createBalloon());
 
-    // إنهاء اللعبة تلقائياً بعد 30 ثانية (مدة مناسبة للطفل)
     setTimeout(finishGame, 30000);
-
     requestAnimationFrame(gameLoop);
 }
 
@@ -163,10 +169,24 @@ function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (stage === 'PLAY') {
-        // رسم النتيجة في الأعلى
-        ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 28px Segoe UI';
-        ctx.fillText(`النقاط: ${score} ⭐️`, 40, 50);
+        // رسم شريط النقاط آمن من الحواف
+        let safeX = Math.max(20, canvas.width * 0.05);
+        let safeY = Math.max(30, canvas.height * 0.08);
+
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.7)';
+        if (ctx.roundRect) {
+            ctx.beginPath();
+            ctx.roundRect(safeX, safeY - 25, 150, 45, 12);
+            ctx.fill();
+        } else {
+            ctx.fillRect(safeX, safeY - 25, 150, 45);
+        }
+
+        ctx.fillStyle = '#facc15';
+        ctx.font = 'bold 20px Segoe UI';
+        ctx.textAlign = 'center';
+        ctx.fillText(`النقاط: ${score} ⭐️`, safeX + 75, safeY + 5);
+        ctx.textAlign = 'start'; 
 
         // تحديث ورسم البالونات
         balloons.forEach((b, index) => {
@@ -177,19 +197,21 @@ function gameLoop() {
             if (b.shape === 'circle') {
                 ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
             } else {
-                ctx.roundRect(b.x - b.radius, b.y - b.radius, b.radius * 2, b.radius * 2, 15);
+                if (ctx.roundRect) {
+                    ctx.roundRect(b.x - b.radius, b.y - b.radius, b.radius * 2, b.radius * 2, 12);
+                } else {
+                    ctx.rect(b.x - b.radius, b.y - b.radius, b.radius * 2, b.radius * 2);
+                }
             }
             ctx.fill();
 
-            // خيط البالون
             ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
             ctx.lineWidth = 3;
             ctx.beginPath();
             ctx.moveTo(b.x, b.y + b.radius);
-            ctx.lineTo(b.x, b.y + b.radius + 30);
+            ctx.lineTo(b.x, b.y + b.radius + 25);
             ctx.stroke();
 
-            // اعادة البالون للأصل عند الخروج
             if (b.y < -60) {
                 balloons[index] = createBalloon();
             }
@@ -199,7 +221,6 @@ function gameLoop() {
     }
 }
 
-// التفاعل باللمس أو الضغط
 canvas.addEventListener('pointerdown', (e) => {
     if (stage !== 'PLAY') return;
 
@@ -211,13 +232,13 @@ canvas.addEventListener('pointerdown', (e) => {
         if (dist < b.radius + 15) {
             score++;
             hit = true;
-            interactions.push({ x: e.clientX, y: e.clientY, time: Date.now() - startTime, success: true });
-            balloons[index] = createBalloon(); // فرقعة البالون وإنشاء جديد
+            interactions.push({ x: Math.round(e.clientX), y: Math.round(e.clientY), time: Date.now() - startTime, hit: 1 });
+            balloons[index] = createBalloon();
         }
     });
 
     if (!hit) {
-        interactions.push({ x: e.clientX, y: e.clientY, time: Date.now() - startTime, success: false });
+        interactions.push({ x: Math.round(e.clientX), y: Math.round(e.clientY), time: Date.now() - startTime, hit: 0 });
     }
 });
 
@@ -225,24 +246,29 @@ function finishGame() {
     stage = 'END';
     document.getElementById('endCard').style.display = 'block';
 
-    let accuracy = totalTaps > 0 ? (score / totalTaps).toFixed(2) : 0;
+    let accuracy = totalTaps > 0 ? parseFloat((score / totalTaps).toFixed(2)) : 0;
 
-    // حفظ التقرير في السيرفر بدون أخطاء
+    // تجهيز البيانات بصيغة متوافقة تماماً مع PHP
+    const payload = {
+        child_id: childId,
+        game_id: 3,
+        social_preference_score: accuracy,
+        fixation_duration_ms: 30000,
+        saccade_velocity: score,
+        asd_indicator: score >= 8 ? 'LOW_RISK' : 'MODERATE_RISK',
+        sld_indicator: accuracy > 0.5 ? 'LOW_RISK' : 'MODERATE_RISK',
+        raw_gaze_data: JSON.stringify(interactions.slice(0, 50)) // تحويل البيانات لـ JSON String وتقليص الحجم لمنع خطأ 500
+    };
+
     fetch('save_game_result.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            child_id: childId,
-            game_id: 3,
-            social_preference_score: accuracy,
-            fixation_duration_ms: 30000,
-            saccade_velocity: score,
-            asd_indicator: score >= 8 ? 'LOW_RISK' : 'MODERATE_RISK',
-            sld_indicator: accuracy > 0.5 ? 'LOW_RISK' : 'MODERATE_RISK',
-            raw_gaze_data: interactions
-        })
+        body: JSON.stringify(payload)
     })
-    .then(res => res.json())
+    .then(async res => {
+        if (!res.ok) throw new Error('HTTP status ' + res.status);
+        return res.json();
+    })
     .then(() => {
         document.getElementById('statusMsg').innerText = "أحسنت! تم حفظ نتائج اللعبة في ملف الطفل بنجاح 🌟";
     })
