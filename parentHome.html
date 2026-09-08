@@ -66,9 +66,34 @@
   <!-- قسم 2: حجز المواعيد -->
 <section id="appointments-section" class="tab-content hidden">
   <div class="section-header">
-    <h2>حجز المواعيد والأخصائيين</h2>
+    <h2><i class="fas fa-user-md"></i> حجز المواعيد والأخصائيين</h2>
   </div>
-  
+
+  <!-- شريط الفلترة والبحث -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label for="filterSpecialty"><i class="fas fa-stethoscope"></i> التخصص:</label>
+      <select id="filterSpecialty">
+        <option value="">الكل</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="filterAddress"><i class="fas fa-map-marker-alt"></i> العنوان / الولاية:</label>
+      <select id="filterAddress">
+        <option value="">الكل</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="filterSort"><i class="fas fa-sort-alpha-down"></i> الترتيب:</label>
+      <select id="filterSort">
+        <option value="asc">أبجدي (أ - ي)</option>
+        <option value="desc">أبجدي (ي - أ)</option>
+      </select>
+    </div>
+  </div>
+
   <!-- حاوية عرض الأخصائيين -->
   <div id="specialistsContainer" class="specialists-grid">
     <p class="placeholder-text">جاري تحميل قائمة الأخصائيين...</p>

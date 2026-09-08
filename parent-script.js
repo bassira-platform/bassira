@@ -506,52 +506,121 @@ async function openParentProfile() {
     alert('⚠️ تعذر جلب بيانات الملف الشخصي.');
   }
 }
+
 // ==========================================
-// 9. جلب وعرض الأخصائيين المتاحين
+// 9. جلب وعرض الأخصائيين المتاحين والفلاتر
 // ==========================================
+let filtersInitialized = false;
+
 async function loadSpecialists() {
   const container = document.getElementById('specialistsContainer');
   if (!container) return;
 
+  const specialty = document.getElementById('filterSpecialty')?.value || '';
+  const address = document.getElementById('filterAddress')?.value || '';
+  const sort = document.getElementById('filterSort')?.value || 'asc';
+
+  // بناء رابط الاستعلام مع الفلاتر
+  const queryParams = new URLSearchParams({
+    specialty: specialty,
+    address: address,
+    sort: sort
+  });
+
   try {
-    const res = await fetch('get_specialists.php'); // ملف backend لجلب الأخصائيين
-    if (!res.ok) throw new Error('خطأ في الاتصال');
+    const res = await fetch(`get_specialists.php?${queryParams.toString()}`);
+    if (res.status === 401) { handleLogoutRedirect(); return; }
+    if (!res.ok) throw new Error('خطأ في الشبكة');
 
     const result = await res.json();
-    const specialists = result.data || result;
 
-    if (!Array.isArray(specialists) || specialists.length === 0) {
+    if (result.status !== 'success') {
+      container.innerHTML = `<p class="placeholder-text">${escapeHtml(result.message || 'حدث خطأ أثناء تحميل البيانات')}</p>`;
+      return;
+    }
+
+    // 1. تعبئة القوائم المنسدلة للفلترة لمرة واحدة فقط
+    if (!filtersInitialized && result.filters) {
+      populateFilterOptions('filterSpecialty', result.filters.specialties, 'value', 'label');
+      populateFilterOptions('filterAddress', result.filters.addresses);
+      filtersInitialized = true;
+    }
+
+    const specialists = result.specialists || [];
+
+    // 2. حالة عدم وجود أخصائيين
+    if (specialists.length === 0) {
       container.innerHTML = `
         <div class="empty-state">
           <div class="empty-icon"><i class="fas fa-user-md"></i></div>
-          <h3>لا يوجد أخصائيون متاحون حالياً</h3>
-          <p>يرجى التحقق مرة أخرى لاحقاً لحجز المواعيد.</p>
+          <h3>لا يوجد أخصائيون مطابقون للبحث</h3>
+          <p>جرّب تغيير خيارات الفلترة أو البحث لنتائج أخرى.</p>
         </div>`;
       return;
     }
 
+    // 3. عرض بطاقات الأخصائيين
     container.innerHTML = '';
     specialists.forEach(spec => {
       const card = document.createElement('div');
       card.className = 'specialist-card';
+
+      const avatarSrc = spec.avatar_url ? spec.avatar_url : 'assets/default-avatar.png';
+      const specName = escapeHtml(spec.full_name);
+      const specType = escapeHtml(spec.specialist_type_label || 'أخصائي معتمد');
+      const specAddress = escapeHtml(spec.address);
+      const specPhone = escapeHtml(spec.phone);
+
       card.innerHTML = `
-        <div class="specialist-info">
-          <i class="fas fa-user-md specialist-avatar"></i>
-          <h4>${escapeHtml(spec.name || spec.full_name)}</h4>
-          <p class="specialty">${escapeHtml(spec.specialty || 'أخصائي معتمد')}</p>
+        <div class="specialist-header">
+          <img src="${avatarSrc}" alt="${specName}" class="specialist-avatar-img" onerror="this.src='assets/default-avatar.png'">
+          <h4>${specName}</h4>
+          <span class="specialty-badge">${specType}</span>
         </div>
-        <button class="btn-primary" onclick="bookAppointment('${spec.id}')">
+        <div class="specialist-body">
+          ${specAddress ? `<p><i class="fas fa-map-marker-alt"></i> ${specAddress}</p>` : ''}
+          ${specPhone ? `<p><i class="fas fa-phone"></i> ${specPhone}</p>` : ''}
+        </div>
+        <button class="btn-primary btn-book" onclick="bookAppointment('${spec.id}', '${specName}')">
           <i class="fas fa-calendar-check"></i> حجز موعد
         </button>
       `;
       container.appendChild(card);
     });
+
   } catch (err) {
+    console.error('خطأ جلب الأخصائيين:', err);
     container.innerHTML = `<p class="placeholder-text">تعذر تحميل قائمة الأخصائيين حالياً.</p>`;
   }
 }
 
-// تشغيل جلب الأخصائيين عند الضغط على تبويب المواعيد
+// دالة مساعدة لتعبئة خيارات الفلترة
+function populateFilterOptions(selectId, items, valueKey = null, labelKey = null) {
+  const select = document.getElementById(selectId);
+  if (!select || !Array.isArray(items)) return;
+
+  items.forEach(item => {
+    const option = document.createElement('option');
+    if (typeof item === 'object') {
+      option.value = item[valueKey];
+      option.textContent = item[labelKey];
+    } else {
+      option.value = item;
+      option.textContent = item;
+    }
+    select.appendChild(option);
+  });
+}
+
+// ربط أحداث التغيير في الفلاتر لإعادة التحميل تلقائياً
+document.addEventListener('DOMContentLoaded', () => {
+  ['filterSpecialty', 'filterAddress', 'filterSort'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('change', loadSpecialists);
+  });
+});
+
+// تشغيل جلب الأخصائيين عند فتح التبويب
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     if (btn.dataset.tab === 'appointments-section') {
@@ -560,6 +629,6 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
   });
 });
 
-function bookAppointment(specialistId) {
-  alert(`سيتم فتح نموذج الحجز للأخصائي رقم: ${specialistId}`);
+function bookAppointment(specialistId, specialistName) {
+  alert(`سيتم فتح نافذة حجز موعد مع: ${specialistName}`);
 }
