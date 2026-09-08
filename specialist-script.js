@@ -63,24 +63,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- 4. جلب معلومات الأخصائي عند تحميل الصفحة ---
   function loadSpecialistProfile() {
-    fetch('api.php?action=get_profile')
+    fetch('get_specialist_profile.php')
       .then(res => res.json())
       .then(res => {
-        if (res.status === 'success' || res.success) {
-          const data = res.data || res;
+        if (res.status === 'success') {
+          const data = res.data;
           
           const fullNameInput = document.getElementById('specFullName');
+          const emailInput = document.getElementById('specEmail');
           const specialtyInput = document.getElementById('specSpecialty');
           const phoneInput = document.getElementById('specPhone');
           const clinicAddressInput = document.getElementById('specClinicAddress');
           const avatarPreview = document.getElementById('specialistAvatarPreview');
 
           if (fullNameInput) fullNameInput.value = data.full_name || '';
-          if (specialtyInput) specialtyInput.value = data.specialist_type || data.specialty || '';
+          if (emailInput) emailInput.value = data.email || '';
+          if (specialtyInput) specialtyInput.value = data.specialist_type || '';
           if (phoneInput) phoneInput.value = data.phone || '';
-          if (clinicAddressInput) clinicAddressInput.value = data.clinic_address || data.address || '';
-          if (avatarPreview && data.avatar) {
-            avatarPreview.src = data.avatar;
+          if (clinicAddressInput) clinicAddressInput.value = data.clinic_address || '';
+          if (avatarPreview && data.avatar_url) {
+            avatarPreview.src = data.avatar_url;
           }
         }
       })
@@ -91,7 +93,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const specialistProfileForm = document.getElementById('specialistProfileForm');
   if (specialistProfileForm) {
     specialistProfileForm.addEventListener('submit', async (e) => {
-      e.preventDefault(); // منع إرسال النموذج واستدعاء رابط GET
+      e.preventDefault();
 
       const formData = new FormData(specialistProfileForm);
       const submitBtn = specialistProfileForm.querySelector('button[type="submit"]');
@@ -109,8 +111,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const result = await response.json();
 
-        if (result.success || result.status === 'success') {
-          alert('✅ تم حفظ التغييرات المهنية بنجاح!');
+        if (result.status === 'success') {
+          alert('✅ ' + result.message);
           closeModal('specialistProfileModal');
           loadSpecialistProfile(); // إعادة تحميل البيانات المحدثة
         } else {
@@ -193,52 +195,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // تشغيل الاستعلامات الذاتية
+  // تشغيل الاستعلام الأولي لجلب البيانات عند التحميل
   loadSpecialistProfile();
-// جلب البيانات عند التحميل
-function loadSpecialistProfile() {
-  fetch('get_specialist_profile.php')
-    .then(res => res.json())
-    .then(res => {
-      if (res.status === 'success') {
-        const data = res.data;
-        if (document.getElementById('specFullName')) document.getElementById('specFullName').value = data.full_name || '';
-        if (document.getElementById('specEmail')) document.getElementById('specEmail').value = data.email || '';
-        if (document.getElementById('specSpecialty')) document.getElementById('specSpecialty').value = data.specialist_type || '';
-        if (document.getElementById('specPhone')) document.getElementById('specPhone').value = data.phone || '';
-        if (document.getElementById('specClinicAddress')) document.getElementById('specClinicAddress').value = data.clinic_address || '';
-        if (document.getElementById('specialistAvatarPreview') && data.avatar_url) {
-          document.getElementById('specialistAvatarPreview').src = data.avatar_url;
-        }
-      }
-    })
-    .catch(err => console.error('خطأ جلب البيانات:', err));
-}
-
-// حفظ التعديلات عند التقديم
-const specialistProfileForm = document.getElementById('specialistProfileForm');
-if (specialistProfileForm) {
-  specialistProfileForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const formData = new FormData(specialistProfileForm);
-
-    try {
-      const response = await fetch('update_specialist_profile.php', {
-        method: 'POST',
-        body: formData
-      });
-      const result = await response.json();
-
-      if (result.status === 'success') {
-        alert('✅ ' + result.message);
-        loadSpecialistProfile();
-      } else {
-        alert('❌ ' + result.message);
-      }
-    } catch (err) {
-      alert('❌ حدث خطأ أثناء الاتصال بالخادم.');
-    }
-  });
-}
 
 });
