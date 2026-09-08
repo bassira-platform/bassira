@@ -153,3 +153,41 @@ body {
   .profile-modal-content { width: 92%; padding: 15px 16px; border-radius: 12px; }
   .profile-avatar-img { width: 65px; height: 65px; }
 }
+
+/* تنسيقات شبكة الأخصائيين */
+.specialists-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.specialist-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.specialist-avatar {
+  font-size: 2.5rem;
+  color: var(--primary);
+  margin-bottom: 10px;
+}
+
+.specialist-info h4 {
+  margin: 5px 0;
+  font-size: 1.1rem;
+}
+
+.specialist-info .specialty {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-bottom: 15px;
+}

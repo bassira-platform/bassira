@@ -506,3 +506,60 @@ async function openParentProfile() {
     alert('⚠️ تعذر جلب بيانات الملف الشخصي.');
   }
 }
+// ==========================================
+// 9. جلب وعرض الأخصائيين المتاحين
+// ==========================================
+async function loadSpecialists() {
+  const container = document.getElementById('specialistsContainer');
+  if (!container) return;
+
+  try {
+    const res = await fetch('get_specialists.php'); // ملف backend لجلب الأخصائيين
+    if (!res.ok) throw new Error('خطأ في الاتصال');
+
+    const result = await res.json();
+    const specialists = result.data || result;
+
+    if (!Array.isArray(specialists) || specialists.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-icon"><i class="fas fa-user-md"></i></div>
+          <h3>لا يوجد أخصائيون متاحون حالياً</h3>
+          <p>يرجى التحقق مرة أخرى لاحقاً لحجز المواعيد.</p>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = '';
+    specialists.forEach(spec => {
+      const card = document.createElement('div');
+      card.className = 'specialist-card';
+      card.innerHTML = `
+        <div class="specialist-info">
+          <i class="fas fa-user-md specialist-avatar"></i>
+          <h4>${escapeHtml(spec.name || spec.full_name)}</h4>
+          <p class="specialty">${escapeHtml(spec.specialty || 'أخصائي معتمد')}</p>
+        </div>
+        <button class="btn-primary" onclick="bookAppointment('${spec.id}')">
+          <i class="fas fa-calendar-check"></i> حجز موعد
+        </button>
+      `;
+      container.appendChild(card);
+    });
+  } catch (err) {
+    container.innerHTML = `<p class="placeholder-text">تعذر تحميل قائمة الأخصائيين حالياً.</p>`;
+  }
+}
+
+// تشغيل جلب الأخصائيين عند الضغط على تبويب المواعيد
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    if (btn.dataset.tab === 'appointments-section') {
+      loadSpecialists();
+    }
+  });
+});
+
+function bookAppointment(specialistId) {
+  alert(`سيتم فتح نموذج الحجز للأخصائي رقم: ${specialistId}`);
+}
