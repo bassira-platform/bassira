@@ -619,6 +619,42 @@ function populateFilterOptions(selectId, items, valueKey = null, labelKey = null
   });
 }
 
-function bookAppointment(specialistId, specialistName) {
-  alert(`سيتم فتح نافذة حجز موعد مع: ${specialistName}`);
+async function bookAppointment(specialistId, specialistName) {
+  const modal = document.getElementById('bookingModal');
+  const specialistInput = document.getElementById('bookingSpecialistId');
+  const bookingTitle = document.getElementById('bookingTitle');
+  const childSelect = document.getElementById('bookingChildSelect');
+
+  if (!modal) {
+    alert('⚠️ عنصر نافذة الحجز غير موجود في HTML');
+    return;
+  }
+
+  // تعبئة بيانات الأخصائي في النافذة
+  if (specialistInput) specialistInput.value = specialistId;
+  if (bookingTitle) bookingTitle.textContent = `حجز موعد مع: ${specialistName}`;
+
+  // تعبئة قائمة الأطفال المتاحين للحجز
+  try {
+    const res = await fetch('get_children.php');
+    if (res.ok) {
+      const responseData = await res.json();
+      const children = responseData.data ? responseData.data : (Array.isArray(responseData) ? responseData : []);
+
+      if (childSelect) {
+        childSelect.innerHTML = '<option value="">-- اختر الطفل --</option>';
+        children.forEach(child => {
+          const option = document.createElement('option');
+          option.value = child.id;
+          option.textContent = child.full_name;
+          childSelect.appendChild(option);
+        });
+      }
+    }
+  } catch (err) {
+    console.error('تعذر جلب قائمة الأطفال الحجز:', err);
+  }
+
+  // إظهار النافذة
+  modal.classList.remove('hidden');
 }
