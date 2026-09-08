@@ -32,6 +32,7 @@
   </header>
 
   <!-- المحتوى الرئيسي -->
+ <!-- المحتوى الرئيسي -->
   <main class="main-content" id="mainContent">
     
     <!-- تبويبات التنقل الرئيسية -->
@@ -90,43 +91,16 @@
           <option value="all">جميع الأطفال</option>
         </select>
       </div>
-<div id="medicalFilesContainer" class="files-grid">
-  
-  <!-- بطاقة ملف الـ PDF: دليل الفحص الطبي -->
-  <div class="file-card" data-file="guide.pdf" data-type="pdf">
-    <div class="file-type-icon pdf">
-      <i class="fas fa-file-pdf"></i>
-    </div>
-    <div class="file-details">
-      <h4>دليل تقرير الفحص الطبي</h4>
-      <p><strong>الطفل:</strong> أحمد محمد</p>
-      <p><strong>ولي الأمر:</strong> علي محمد</p>
-      <span class="file-date"><i class="fas fa-calendar-day"></i> 2026-09-01</span>
-    </div>
-    <div class="file-actions">
-      <a href="#" class="btn-action view-btn" title="معاينة الملف"><i class="fas fa-eye"></i> معاينة</a>
-      <a href="guide.pdf" download class="btn-action download-btn" title="تحميل الملف"><i class="fas fa-download"></i></a>
-    </div>
-  </div>
 
-  <!-- بطاقة ملف الصورة: نتائج التحاليل والأشعة -->
-  <div class="file-card" data-file="téléchargement (1).png" data-type="image">
-    <div class="file-type-icon image">
-      <i class="fas fa-file-image"></i>
-    </div>
-    <div class="file-details">
-      <h4>نتائج الفحص والأشعة</h4>
-      <p><strong>الطفل:</strong> سارة كريم</p>
-      <p><strong>ولي الأمر:</strong> كريم أحمد</p>
-      <span class="file-date"><i class="fas fa-calendar-day"></i> 2026-09-05</span>
-    </div>
-    <div class="file-actions">
-      <a href="#" class="btn-action view-btn" title="معاينة الملف"><i class="fas fa-eye"></i> معاينة</a>
-      <a href="téléchargement (1).png" download class="btn-action download-btn" title="تحميل الملف"><i class="fas fa-download"></i></a>
-    </div>
-  </div>
-
-</div>
+      <!-- حاوية الملفات الواردة (تعبأ ديناميكياً) -->
+      <div id="medicalFilesContainer" class="files-grid">
+        <!-- حالة فارغة مؤقتة لحين جلب الملفات ديناميكياً -->
+        <div class="empty-state">
+          <div class="empty-icon"><i class="fas fa-folder-open"></i></div>
+          <h3>لا توجد ملفات أو تقارير طبية مرسلة</h3>
+          <p>ستظهر هنا المستندات والتقارير الطبية التي يشاركها أولياء الأمور معك.</p>
+        </div>
+      </div>
     </section>
 
   </main>
@@ -184,6 +158,10 @@
         <div class="form-group">
           <label for="specFullName">الاسم الكامل:</label>
           <input type="text" id="specFullName" name="full_name" required>
+        </div>
+<div class="form-group">
+          <label for="specEmail">البريد الإلكتروني:</label>
+          <input type="email" id="specEmail" name="email" required placeholder="example@email.com">
         </div>
 
         <div class="form-group">
