@@ -375,6 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <i class="fas fa-cog"></i>
               </button>
               <div id="cardOptions-${child.id}" class="dropdown-content hidden">
+                <a href="javascript:void(0)" onclick="openReportModal('${child.id}')" class="dropdown-item"><i class="fas fa-file-invoice"></i> تقرير التشخيص 📋</a>
                 <a href="javascript:void(0)" onclick="openHealthModal('${child.id}')" class="dropdown-item"><i class="fas fa-notes-medical"></i> الملف الصحي</a>
                 <a href="javascript:void(0)" onclick="editPassword('${child.id}')" class="dropdown-item"><i class="fas fa-key"></i> تعديل كلمة المرور</a>
                 <a href="javascript:void(0)" onclick="editInfo('${child.id}')" class="dropdown-item"><i class="fas fa-user-edit"></i> المعلومات الشخصية</a>

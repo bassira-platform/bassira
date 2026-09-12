@@ -7,6 +7,47 @@
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="parent-style.css">
+
+  <style>
+  /* تنسيق النافذة المنبثقة للتقرير والتصاميم */
+  .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.75); backdrop-filter: blur(4px);
+      z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 15px;
+  }
+  .modal-card {
+      background: #0f172a; border: 2px solid #38bdf8; border-radius: 20px;
+      width: 100%; max-width: 700px; max-height: 90vh; overflow-y: auto; color: #fff;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+  }
+  .modal-header { padding: 16px 20px; border-bottom: 1px solid #334155; display: flex; justify-content: space-between; align-items: center; }
+  .close-btn { background: none; border: none; color: #94a3b8; font-size: 22px; cursor: pointer; }
+  .modal-body { padding: 20px; font-family: 'Cairo', sans-serif; }
+  .report-header { text-align: center; border-bottom: 2px dashed #334155; padding-bottom: 15px; margin-bottom: 15px; }
+  .report-logo { width: 70px; height: auto; margin-bottom: 8px; }
+  .report-header h2 { color: #38bdf8; font-size: 22px; margin-bottom: 5px; }
+  .report-date { color: #94a3b8; font-size: 13px; }
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px; }
+  .info-box { background: #1e293b; padding: 12px 16px; border-radius: 12px; border: 1px solid #334155; }
+  .info-box h4 { color: #facc15; font-size: 15px; margin-bottom: 8px; border-bottom: 1px solid #334155; padding-bottom: 4px; }
+  .info-box p { font-size: 13px; margin-bottom: 5px; color: #cbd5e1; }
+  .full-width { margin-bottom: 15px; }
+  .diagnosis-summary { background: #1e293b; border: 1px solid #38bdf8; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
+  .diagnosis-summary h4 { color: #38bdf8; font-size: 15px; margin-bottom: 10px; }
+  .indicators-container { display: flex; gap: 10px; justify-content: space-around; flex-wrap: wrap; }
+  .indicator-card { font-size: 14px; display: flex; align-items: center; gap: 8px; }
+  .badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+  .badge-low { background: #10b98122; color: #34d399; border: 1px solid #10b981; }
+  .badge-mod { background: #f59e0b22; color: #fbbf24; border: 1px solid #f59e0b; }
+  .badge-high { background: #ef444422; color: #f87171; border: 1px solid #ef4444; }
+  .doctor-note { background: #0f172a; padding: 12px; border-radius: 8px; border-right: 4px solid #38bdf8; font-size: 12px; color: #94a3b8; }
+  .modal-footer { padding: 15px 20px; border-top: 1px solid #334155; display: flex; justify-content: flex-end; gap: 10px; }
+  .btn-download { background: #10b981; color: white; border: none; padding: 10px 18px; border-radius: 10px; font-weight: bold; cursor: pointer; }
+  .btn-close { background: #475569; color: white; border: none; padding: 10px 18px; border-radius: 10px; cursor: pointer; }
+
+  @media (max-width: 600px) {
+      .grid-2 { grid-template-columns: 1fr; }
+  }
+  </style>
 </head>
 <body>
 
@@ -16,10 +57,10 @@
       <img src="logo.png" alt="شعار بصيرة" class="logo-img">
       <span class="logo-text">بصيرة</span>
       <li class="nav-item">
-    <a class="nav-link btn btn-outline-info text-white rounded-pill px-3 ms-2" href="child_dashboard.php" target="_blank">
-        🎮 منطقة الألعاب والأطفال
-    </a>
-</li>
+        <a class="nav-link btn btn-outline-info text-white rounded-pill px-3 ms-2" href="child_dashboard.php" target="_blank">
+            🎮 منطقة الألعاب والأطفال
+        </a>
+      </li>
     </div>
 
     <!-- قائمة الخيارات المنسدلة -->
@@ -68,42 +109,42 @@
       </div>
     </section>
 
-  <!-- قسم 2: حجز المواعيد -->
-<section id="appointments-section" class="tab-content hidden">
-  <div class="section-header">
-    <h2><i class="fas fa-user-md"></i> حجز المواعيد والأخصائيين</h2>
-  </div>
+    <!-- قسم 2: حجز المواعيد -->
+    <section id="appointments-section" class="tab-content hidden">
+      <div class="section-header">
+        <h2><i class="fas fa-user-md"></i> حجز المواعيد والأخصائيين</h2>
+      </div>
 
-  <!-- شريط الفلترة والبحث -->
-  <div class="filter-bar">
-    <div class="filter-group">
-      <label for="filterSpecialty"><i class="fas fa-stethoscope"></i> التخصص:</label>
-      <select id="filterSpecialty">
-        <option value="">الكل</option>
-      </select>
-    </div>
+      <!-- شريط الفلترة والبحث -->
+      <div class="filter-bar">
+        <div class="filter-group">
+          <label for="filterSpecialty"><i class="fas fa-stethoscope"></i> التخصص:</label>
+          <select id="filterSpecialty">
+            <option value="">الكل</option>
+          </select>
+        </div>
 
-    <div class="filter-group">
-      <label for="filterAddress"><i class="fas fa-map-marker-alt"></i> العنوان / الولاية:</label>
-      <select id="filterAddress">
-        <option value="">الكل</option>
-      </select>
-    </div>
+        <div class="filter-group">
+          <label for="filterAddress"><i class="fas fa-map-marker-alt"></i> العنوان / الولاية:</label>
+          <select id="filterAddress">
+            <option value="">الكل</option>
+          </select>
+        </div>
 
-    <div class="filter-group">
-      <label for="filterSort"><i class="fas fa-sort-alpha-down"></i> الترتيب:</label>
-      <select id="filterSort">
-        <option value="asc">أبجدي (أ - ي)</option>
-        <option value="desc">أبجدي (ي - أ)</option>
-      </select>
-    </div>
-  </div>
+        <div class="filter-group">
+          <label for="filterSort"><i class="fas fa-sort-alpha-down"></i> الترتيب:</label>
+          <select id="filterSort">
+            <option value="asc">أبجدي (أ - ي)</option>
+            <option value="desc">أبجدي (ي - أ)</option>
+          </select>
+        </div>
+      </div>
 
-  <!-- حاوية عرض الأخصائيين -->
-  <div id="specialistsContainer" class="specialists-grid">
-    <p class="placeholder-text">جاري تحميل قائمة الأخصائيين...</p>
-  </div>
-</section>
+      <!-- حاوية عرض الأخصائيين -->
+      <div id="specialistsContainer" class="specialists-grid">
+        <p class="placeholder-text">جاري تحميل قائمة الأخصائيين...</p>
+      </div>
+    </section>
 
   </main>
 
@@ -178,11 +219,10 @@
           <label for="medicalConditions">الأمراض المزمنة / ملاحظات طبية:</label>
           <textarea id="medicalConditions" name="medical_conditions" placeholder="مثال: الربو، السكري..."></textarea>
         </div>
-                     <!-- حقل اختيار الملف -->
-             <div class="form-group">
-            <label>المستند الطبي <span style="color:#888;">(اختياري - يوصى به)</span></label>
-             <input type="file" name="health_document" accept="image/*,.pdf,.doc,.docx" class="form-control">
-               </div>
+        <div class="form-group">
+          <label>المستند الطبي <span style="color:#888;">(اختياري - يوصى به)</span></label>
+          <input type="file" name="health_document" accept="image/*,.pdf,.doc,.docx" class="form-control">
+        </div>
 
         <button type="submit" class="btn-primary">حفظ الملف الصحي</button>
       </form>
@@ -291,6 +331,115 @@
     </div>
   </div>
 
+  <!-- النافذة المنبثقة 6: نافذة حجز موعد -->
+  <div id="bookingModal" class="modal hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="bookingTitle">حجز موعد جديد</h3>
+        <button id="closeBookingModal" class="close-btn">&times;</button>
+      </div>
+      
+      <form id="bookingForm">
+        <input type="hidden" id="bookingSpecialistId" name="specialist_id">
+        
+        <div class="form-group">
+          <label>اختيار الطفل:</label>
+          <select id="bookingChildSelect" name="child_id" required>
+            <option value="">-- اختر الطفل --</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>تاريخ الموعد:</label>
+          <input type="date" id="bookingDate" name="booking_date" required>
+        </div>
+
+        <div class="form-group">
+          <label>الوقت:</label>
+          <input type="time" id="bookingTime" name="booking_time" required>
+        </div>
+
+        <div class="form-group">
+          <label>ملاحظات إضافية:</label>
+          <textarea id="bookingNotes" name="notes" rows="3" placeholder="أكتب أي تفاصيل أخرى هنا..."></textarea>
+        </div>
+
+        <div class="modal-actions">
+          <button type="submit" class="btn-primary">تأكيد الحجز</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- النافذة المنبثقة 7: نافذة عرض تقرير التشخيص الطبي وتوليد PDF -->
+  <div id="reportModal" class="modal-backdrop" style="display: none;">
+      <div class="modal-card">
+          <div class="modal-header">
+              <h3>📋 تقرير التشخيص البصري والطبي</h3>
+              <button class="close-btn" onclick="closeReportModal()">✕</button>
+          </div>
+          
+          <div id="pdf-content" class="modal-body">
+              <div class="report-header">
+                  <img src="logo.png" alt="شعار المنصة" class="report-logo">
+                  <h2>منصة بصيرة للتقييم النمائي البصري 👁️</h2>
+                  <p id="rep-date" class="report-date"></p>
+              </div>
+
+              <!-- معلومات الطفل وولي الأمر -->
+              <div class="grid-2">
+                  <div class="info-box">
+                      <h4>بيانات الطفل</h4>
+                      <p><strong>الاسم:</strong> <span id="rep-child-name">-</span></p>
+                      <p><strong>المعرف الشخصي:</strong> <span id="rep-child-uid">-</span></p>
+                      <p><strong>تاريخ الميلاد:</strong> <span id="rep-child-dob">-</span></p>
+                      <p><strong>فصيلة الدم:</strong> <span id="rep-child-blood">-</span></p>
+                  </div>
+                  <div class="info-box">
+                      <h4>بيانات ولي الأمر</h4>
+                      <p><strong>الاسم:</strong> <span id="rep-parent-name">-</span></p>
+                      <p><strong>الهاتف:</strong> <span id="rep-parent-phone">-</span></p>
+                      <p><strong>البريد:</strong> <span id="rep-parent-email">-</span></p>
+                      <p><strong>العنوان:</strong> <span id="rep-parent-address">-</span></p>
+                  </div>
+              </div>
+
+              <!-- ملخص حالة التشخيص المبسطة للولي -->
+              <div class="diagnosis-summary">
+                  <h4>نتيجة التقييم البصري والنمائي (عبر الألعاب)</h4>
+                  <div class="indicators-container">
+                      <div class="indicator-card">
+                          <span>مؤشر التوحد (ASD):</span>
+                          <strong id="rep-asd-badge" class="badge">جاري التحميل...</strong>
+                      </div>
+                      <div class="indicator-card">
+                          <span>مؤشر صعوبات التعلم (SLD):</span>
+                          <strong id="rep-sld-badge" class="badge">جاري التحميل...</strong>
+                      </div>
+                  </div>
+              </div>
+
+              <!-- الملاحظات الطبية -->
+              <div class="info-box full-width">
+                  <h4>السجل الطبي والملاحظات</h4>
+                  <p><strong>الحساسية:</strong> <span id="rep-allergies">لا يوجد</span></p>
+                  <p><strong>الحالات الطبية المسجلة:</strong> <span id="rep-conditions">لا يوجد</span></p>
+              </div>
+
+              <!-- التوصية الموجهة للأخصائي -->
+              <div class="doctor-note">
+                  <strong>توصية موجهة للاخصائي:</strong>
+                  <p>تم إعداد هذا التقرير تلقائياً بناءً على تحليل حركة العين، التثبيت البصري، والاستجابة التفاعلية عبر ألعاب المنصة. يُرجى استخدام البيانات أعلاه كأداة مساعدة في التقييم الكلينيكي.</p>
+              </div>
+          </div>
+
+          <div class="modal-footer">
+              <button onclick="downloadPDF()" class="btn-download">تحميل التقرير (PDF) 📄</button>
+              <button onclick="closeReportModal()" class="btn-close">إغلاق</button>
+          </div>
+      </div>
+  </div>
+
   <!-- الفوتر -->
   <footer class="app-footer">
     <div class="footer-links">
@@ -302,51 +451,13 @@
     <p class="copyright">&copy; 2026 منصة بصيرة. جميع الحقوق محفوظة.</p>
   </footer>
 
-  <!-- السكربتات البرمجية -->
+  <!-- مكتبة html2pdf الخارجية -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+  <!-- السكربتات البرمجية الخاصة بالمشروع -->
   <script src="parent-script.js"></script>
   <script src="showPass_script.js"></script>
-<!-- نافذة حجز موعد -->
-<div id="bookingModal" class="modal hidden">
-  <div class="modal-content">
-    <div class="modal-header">
-      <h3 id="bookingTitle">حجز موعد جديد</h3>
-      <button id="closeBookingModal" class="close-btn">&times;</button>
-    </div>
-    
-    <form id="bookingForm">
-      <!-- معرف الأخصائي -->
-      <input type="hidden" id="bookingSpecialistId" name="specialist_id">
-      
-      <div class="form-group">
-        <label>اختيار الطفل:</label>
-        <select id="bookingChildSelect" name="child_id" required>
-          <option value="">-- اختر الطفل --</option>
-        </select>
-      </div>
+  <script src="diagnosis_report.js"></script>
 
-      <div class="form-group">
-        <label>تاريخ الموعد:</label>
-        <!-- تعديل name من appointment_date إلى booking_date -->
-        <input type="date" id="bookingDate" name="booking_date" required>
-      </div>
-
-      <div class="form-group">
-        <label>الوقت:</label>
-        <!-- تعديل name من appointment_time إلى booking_time -->
-        <input type="time" id="bookingTime" name="booking_time" required>
-      </div>
-
-      <div class="form-group">
-        <label>ملاحظات إضافية:</label>
-        <textarea id="bookingNotes" name="notes" rows="3" placeholder="أكتب أي تفاصيل أخرى هنا..."></textarea>
-      </div>
-
-      <div class="modal-actions">
-        <button type="submit" class="btn-primary">تأكيد الحجز</button>
-      </div>
-    </form>
-  </div>
-</div>
-  
 </body>
 </html>
