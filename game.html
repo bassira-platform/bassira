@@ -6,6 +6,8 @@
     <title>مغامرة البطل الصغير - رحلة الاستكشاف</title>
     <!-- محرك الألعاب Phaser 3 المستقر -->
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.60.0/dist/phaser.min.js"></script>
+    <!-- تضمين وحدة إدارة الكاميرا -->
+    <script src="camera_manager.js"></script>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
         body { background-color: #090d16; color: #fff; overflow: hidden; }
@@ -68,7 +70,6 @@ let gazeMetrics = {
 // 2. مشاهد اللعبة (Phaser Scenes)
 // ==========================================
 
-// Scene 1: المعايرة البصرية
 class CalibrationScene extends Phaser.Scene {
     constructor() { super('CalibrationScene'); }
 
@@ -115,7 +116,6 @@ class CalibrationScene extends Phaser.Scene {
     }
 }
 
-// Scene 2: اختبار التوحد (DSM-5 Visual Preference)
 class ASDTestScene extends Phaser.Scene {
     constructor() { super('ASDTestScene'); }
 
@@ -124,7 +124,6 @@ class ASDTestScene extends Phaser.Scene {
             fontSize: '24px', color: '#f8fafc'
         }).setOrigin(0.5);
 
-        // العنصر الاجتماعي
         this.socialContainer = this.add.container(this.scale.width * 0.25, this.scale.height * 0.5);
         let faceBg = this.add.circle(0, 0, 110, 0x38bdf8);
         let eye1 = this.add.circle(-40, -30, 15, 0x0f172a);
@@ -132,7 +131,6 @@ class ASDTestScene extends Phaser.Scene {
         let smile = this.add.arc(0, 20, 50, 0, 180, false, 0x0f172a).setStrokeStyle(6, 0x0f172a);
         this.socialContainer.add([faceBg, eye1, eye2, smile]);
 
-        // العنصر الهندسي غير الاجتماعي
         this.geoContainer = this.add.container(this.scale.width * 0.75, this.scale.height * 0.5);
         let rect1 = this.add.rectangle(0, 0, 180, 180, 0x8b5cf6);
         let rect2 = this.add.rectangle(0, 0, 120, 120, 0xec4899);
@@ -140,7 +138,6 @@ class ASDTestScene extends Phaser.Scene {
 
         this.tweens.add({ targets: [rect1, rect2], angle: 360, duration: 4000, repeat: -1 });
 
-        // تتبع حركة البصر/المؤشر
         this.input.on('pointermove', (pointer) => {
             gazeTracker.x = pointer.x;
             gazeTracker.y = pointer.y;
@@ -172,7 +169,6 @@ class ASDTestScene extends Phaser.Scene {
     }
 }
 
-// Scene 3: اختبار عسر التعلم (SLD Smooth Tracking)
 class SLDTestScene extends Phaser.Scene {
     constructor() { super('SLDTestScene'); }
 
@@ -209,12 +205,16 @@ class SLDTestScene extends Phaser.Scene {
     }
 }
 
-// Scene 4: التقييم وإرسال النتائج
 class EndScene extends Phaser.Scene {
     constructor() { super('EndScene'); }
 
-    create() {
+    async create() {
         gazeTracker.active = false;
+        
+        // إيقاف الكاميرا فور انتهاء الاختبارات
+        if (window.CameraManager) {
+            await window.CameraManager.stop();
+        }
 
         let totalMs = gazeMetrics.socialFixationMs + gazeMetrics.nonSocialFixationMs;
         let socialScore = totalMs > 0 ? (gazeMetrics.socialFixationMs / totalMs) : 0.5;
@@ -230,7 +230,6 @@ class EndScene extends Phaser.Scene {
         if (avgSaccade > 160) sldStatus = 'HIGH_RISK';
         else if (avgSaccade > 110) sldStatus = 'MODERATE_RISK';
 
-        // تصحيح مسار API الحفظ لتجنب خطأ 404
         fetch('save_game_result.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -266,11 +265,13 @@ const config = {
 
 let game;
 
-function startGameEngine() {
+async function startGameEngine() {
+    if (window.CameraManager) {
+        await window.CameraManager.start();
+    }
     document.getElementById('ui-overlay').style.display = 'none';
     game = new Phaser.Game(config);
 }
 </script>
-<script> camera_manager.js</script>
 </body>
 </html>

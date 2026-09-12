@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>حديقة الأشكال والألوان - للأطفال 3 سنوات</title>
+    <!-- تضمين وحدة إدارة الكاميرا -->
+    <script src="camera_manager.js"></script>
 <style>
     * { 
         box-sizing: border-box; 
@@ -36,7 +38,6 @@
         height: 100%;
         z-index: 1; 
     }
-    
     .ui-layer { 
         position: absolute; 
         top: 0; 
@@ -50,11 +51,7 @@
         justify-content: center;
         padding: 20px;
     }
-    
-    .interactive { 
-        pointer-events: auto; 
-    }
-    
+    .interactive { pointer-events: auto; }
     .card { 
         background: rgba(15, 23, 42, 0.95); 
         border: 3px solid #38bdf8; 
@@ -65,18 +62,8 @@
         box-shadow: 0 20px 40px rgba(0,0,0,0.6); 
         margin: auto;
     }
-    
-    h1 { 
-        color: #facc15; 
-        font-size: clamp(22px, 5vw, 30px); 
-        margin-bottom: 12px; 
-    }
-    p { 
-        font-size: clamp(16px, 4vw, 18px); 
-        line-height: 1.5; 
-        color: #e2e8f0; 
-        margin-bottom: 20px; 
-    }
+    h1 { color: #facc15; font-size: clamp(22px, 5vw, 30px); margin-bottom: 12px; }
+    p { font-size: clamp(16px, 4vw, 18px); line-height: 1.5; color: #e2e8f0; margin-bottom: 20px; }
     .btn { 
         background: #10b981; 
         color: white; 
@@ -89,10 +76,7 @@
         transition: transform 0.2s, background 0.2s; 
         box-shadow: 0 10px 20px rgba(16, 185, 129, 0.4); 
     }
-    .btn:hover { 
-        transform: scale(1.05); 
-        background: #059669; 
-    }
+    .btn:hover { transform: scale(1.05); background: #059669; }
 </style>
 </head>
 <body>
@@ -101,14 +85,12 @@
     <canvas id="gameCanvas"></canvas>
 
     <div class="ui-layer">
-        <!-- شاشة البداية -->
         <div id="startCard" class="card interactive">
             <h1>حديقة الألوان 🎈</h1>
             <p>مرحباً يا بطل! اضغط على البالونات الملصقة على الأشكال الجميلة لتجميع النقاط والاحتفال!</p>
             <button class="btn" onclick="startGame()">إبدأ اللعب 🚀</button>
         </div>
 
-        <!-- شاشة النهاية -->
         <div id="endCard" class="card interactive" style="display: none;">
             <h1>ممتاز جداً! 🏆</h1>
             <p id="statusMsg">أنت بطل رائع! جاري حفظ النتيجة...</p>
@@ -150,7 +132,11 @@ function createBalloon() {
     };
 }
 
-function startGame() {
+async function startGame() {
+    if (window.CameraManager) {
+        await window.CameraManager.start();
+    }
+
     document.getElementById('startCard').style.display = 'none';
     stage = 'PLAY';
     score = 0;
@@ -169,7 +155,6 @@ function gameLoop() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     if (stage === 'PLAY') {
-        // رسم شريط النقاط آمن من الحواف
         let safeX = Math.max(20, canvas.width * 0.05);
         let safeY = Math.max(30, canvas.height * 0.08);
 
@@ -188,7 +173,6 @@ function gameLoop() {
         ctx.fillText(`النقاط: ${score} ⭐️`, safeX + 75, safeY + 5);
         ctx.textAlign = 'start'; 
 
-        // تحديث ورسم البالونات
         balloons.forEach((b, index) => {
             b.y -= b.speed;
 
@@ -242,13 +226,16 @@ canvas.addEventListener('pointerdown', (e) => {
     }
 });
 
-function finishGame() {
+async function finishGame() {
     stage = 'END';
     document.getElementById('endCard').style.display = 'block';
 
+    if (window.CameraManager) {
+        await window.CameraManager.stop();
+    }
+
     let accuracy = totalTaps > 0 ? parseFloat((score / totalTaps).toFixed(2)) : 0;
 
-    // تجهيز البيانات بصيغة متوافقة تماماً مع PHP
     const payload = {
         child_id: childId,
         game_id: 3,
@@ -257,7 +244,7 @@ function finishGame() {
         saccade_velocity: score,
         asd_indicator: score >= 8 ? 'LOW_RISK' : 'MODERATE_RISK',
         sld_indicator: accuracy > 0.5 ? 'LOW_RISK' : 'MODERATE_RISK',
-        raw_gaze_data: JSON.stringify(interactions.slice(0, 50)) // تحويل البيانات لـ JSON String وتقليص الحجم لمنع خطأ 500
+        raw_gaze_data: interactions.slice(0, 50)
     };
 
     fetch('save_game_result.php', {
@@ -277,6 +264,5 @@ function finishGame() {
     });
 }
 </script>
-<script> camera_manager.js</script>
 </body>
 </html>

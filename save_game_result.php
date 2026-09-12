@@ -3,10 +3,9 @@ header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Methods: POST");
 
-// معلومات الاتصال بقاعدة البيانات
 $host = "sql213.infinityfree.com";
 $db_name = "if0_42720560_bassira";
-$username = "if0_42720560"; // اسم المستخدم الخاص بـ InfinityFree
+$username = "if0_42720560";
 $password = "Bassira2026"; 
 
 try {
@@ -17,7 +16,6 @@ try {
     exit();
 }
 
-// استقبال البيانات إلكترونياً
 $data = json_decode(file_get_contents("php://input"), true);
 
 if (!empty($data['child_id']) && !empty($data['game_id'])) {
@@ -29,7 +27,6 @@ if (!empty($data['child_id']) && !empty($data['game_id'])) {
 
     $stmt = $conn->prepare($query);
 
-    // ربط الحقول
     $stmt->bindParam(":child_id", $data['child_id']);
     $stmt->bindParam(":game_id", $data['game_id']);
     $stmt->bindParam(":social_score", $data['social_preference_score']);
@@ -38,12 +35,11 @@ if (!empty($data['child_id']) && !empty($data['game_id'])) {
     $stmt->bindParam(":asd", $data['asd_indicator']);
     $stmt->bindParam(":sld", $data['sld_indicator']);
     
-    $json_gaze = json_encode($data['raw_gaze_data']);
+    // تحويل المصفوفة إلى JSON بشكل سليم ومباشر دون تكرار
+    $json_gaze = is_string($data['raw_gaze_data']) ? $data['raw_gaze_data'] : json_encode($data['raw_gaze_data']);
     $stmt->bindParam(":gaze_data", $json_gaze);
 
     if($stmt->execute()) {
-        
-        // تحديث خفيف وتلقائي على السجل الصحي للطفل في جدول health_records
         if ($data['asd_indicator'] === 'HIGH_RISK' || $data['sld_indicator'] === 'HIGH_RISK') {
             $updateHealth = "UPDATE health_records 
                             SET medical_conditions = CONCAT(IFNULL(medical_conditions, ''), ' | اشتباه بناءً على اختبار تتبع العين') 
