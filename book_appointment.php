@@ -17,42 +17,20 @@ try {
     $parentCode   = $_SESSION['user_code'];
     $specialistId = $_POST['specialist_id'] ?? null;
     $childId      = $_POST['child_id'] ?? null;
-$bookingDate  = $_POST['booking_date'] ?? $_POST['appointment_date'] ?? null;
-$bookingTime  = $_POST['booking_time'] ?? $_POST['appointment_time'] ?? null;
+    
+    // التاريخ والوقت أصبحا اختيارين (يمكن إرسالهما خاليين ليحددهما الأخصائي)
+    $bookingDate  = !empty($_POST['booking_date']) ? $_POST['booking_date'] : (!empty($_POST['appointment_date']) ? $_POST['appointment_date'] : null);
+    $bookingTime  = !empty($_POST['booking_time']) ? $_POST['booking_time'] : (!empty($_POST['appointment_time']) ? $_POST['appointment_time'] : null);
+    
     $notes        = trim($_POST['notes'] ?? '');
 
-    if (!$specialistId || !$childId || !$bookingDate || !$bookingTime) {
-        echo json_encode(['status' => 'error', 'message' => 'يرجى ملء جميع الحقول المطلوبة (الطفل، التاريخ، الوقت)']);
+    // التحقق من إدخال الأخصائي والطفل
+    if (!$specialistId || !$childId) {
+        echo json_encode(['status' => 'error', 'message' => 'يرجى اختيار الأخصائي والطفل لمتابعة الطلب']);
         exit();
     }
 
-    // معالجة الملف الطبي الاختياري (PDF / الصورة)
-    $medicalFileDB = null;
-    if (isset($_FILES['medical_file']) && $_FILES['medical_file']['error'] === UPLOAD_ERR_OK) {
-        $fileTmpPath = $_FILES['medical_file']['tmp_name'];
-        $fileName    = $_FILES['medical_file']['name'];
-        $fileExtension = strtolower(pathinfo($fileName, PATHINFO_EXTENSION));
-
-        $allowedExtensions = ['pdf', 'png', 'jpg', 'jpeg'];
-        if (!in_array($fileExtension, $allowedExtensions)) {
-            echo json_encode(['status' => 'error', 'message' => 'نوع الملف غير مدعوم! يرجى رفع ملف PDF أو صورة (PNG, JPG)']);
-            exit();
-        }
-
-        $uploadDir = 'uploads/medical_files/';
-        if (!is_dir($uploadDir)) {
-            mkdir($uploadDir, 0755, true);
-        }
-
-        $newFileName = 'med_' . time() . '_' . uniqid() . '.' . $fileExtension;
-        $destPath    = $uploadDir . $newFileName;
-
-        if (move_uploaded_file($fileTmpPath, $destPath)) {
-            $medicalFileDB = $newFileName;
-        }
-    }
-
-    // حفظ الموعد في قاعدة البيانات
+    // حفظ الموعد في قاعدة البيانات بحالة PENDING
     $sql = "INSERT INTO appointments (
                 parent_code, 
                 specialist_id, 
@@ -60,9 +38,8 @@ $bookingTime  = $_POST['booking_time'] ?? $_POST['appointment_time'] ?? null;
                 appointment_date, 
                 appointment_time, 
                 notes, 
-                medical_file, 
                 status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING')";
+            ) VALUES (?, ?, ?, ?, ?, ?, 'PENDING')";
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute([
@@ -71,13 +48,12 @@ $bookingTime  = $_POST['booking_time'] ?? $_POST['appointment_time'] ?? null;
         $childId,
         $bookingDate,
         $bookingTime,
-        $notes,
-        $medicalFileDB
+        $notes
     ]);
 
     echo json_encode([
         'status'  => 'success',
-        'message' => 'تم إرسال طلب حجز الموعد بنجاح! سينتظر موافقة الأخصائي.'
+        'message' => 'تم إرسال طلب الحجز بنجاح! وهو الآن قيد الانتظار لحين مراجعته وتحديد الموعد من قِبل الأخصائي.'
     ]);
 
 } catch (PDOException $e) {
