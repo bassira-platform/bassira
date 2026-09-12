@@ -13,6 +13,7 @@ send_reset_otp.php
 # FILE API
 contact.php
 send_reminders.php
+update_appointment_status.php
 
 # Exclude Admin Folder
 admin/

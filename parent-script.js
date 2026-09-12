@@ -139,16 +139,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
   tabBtns.forEach(btn => {
     btn.addEventListener('click', () => {
+      const activeTabId = btn.dataset.tab;
+
       tabBtns.forEach(b => b.classList.remove('active'));
       tabContents.forEach(c => c.classList.add('hidden'));
 
       btn.classList.add('active');
-      const targetTab = document.getElementById(btn.dataset.tab);
+      const targetTab = document.getElementById(activeTabId);
       if (targetTab) targetTab.classList.remove('hidden');
 
-      // تشغيل جلب الأخصائيين فور الانتقال لتبويب المواعيد
-      if (btn.dataset.tab === 'appointments-section') {
+      // تشغيل جلب البيانات الديناميكي حسب التبويب النشط
+      if (activeTabId === 'appointments-section') {
         loadSpecialists();
+      } else if (activeTabId === 'my-bookings-section') {
+        loadParentBookings(); // جلب المواعيد فور النقر على تبويب حجوزاتي
       }
     });
   });
@@ -246,7 +250,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (healthRecordForm) {
     healthRecordForm.addEventListener('submit', async function(e) {
       e.preventDefault();
-      const formData = new FormData(this); // يشمل النص والملفات المرفقة تلقائياً
+      const formData = new FormData(this);
 
       try {
         const res = await fetch('save_health_record.php', { 
@@ -702,4 +706,69 @@ async function bookAppointment(specialistId, specialistName) {
 
   // إظهار النافذة
   modal.classList.remove('hidden');
+}
+
+// ==========================================
+// 11. جلب وعرض حجوزات ولي الأمر
+// ==========================================
+async function loadParentBookings() {
+  const container = document.getElementById('parentBookingsContainer');
+  if (!container) return;
+
+  try {
+    const res = await fetch('get_parent_bookings.php');
+    const result = await res.json();
+
+    if (result.status === 'success' && result.data.length > 0) {
+      container.innerHTML = '';
+      result.data.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'booking-card';
+        div.style.padding = '15px';
+        div.style.marginBottom = '15px';
+        div.style.borderRadius = '8px';
+        div.style.border = '1px solid #e0e0e0';
+        div.style.backgroundColor = '#ffffff';
+
+        let statusHtml = '';
+        const dateStr = escapeHtml(item.appointment_date) || 'لم يُحدد بعد';
+        const timeStr = escapeHtml(item.appointment_time) || 'لم يُحدد بعد';
+
+        // التعامل مع الحالات بناءً على دليل رحلة المستخدم[cite: 5]
+        if (item.status === 'PENDING') {
+          statusHtml = `<p><strong>الحالة:</strong> <span style="color: #e67e22; font-weight: bold;">قيد الانتظار ⏳</span> (جارٍ المراجعة وتحديد الموعد من الأخصائي)</p>`;
+        } else if (item.status === 'ACCEPTED') {
+          statusHtml = `
+            <p><strong>الحالة:</strong> <span style="color: #27ae60; font-weight: bold;">مقبول ✔</span></p>
+            <p><strong>الموعد المعتمد:</strong> ${dateStr} الساعة ${timeStr}</p>
+          `;
+        } else if (item.status === 'WAITLIST') {
+          statusHtml = `<p><strong>الحالة:</strong> <span style="color: #f39c12; font-weight: bold;">قائمة الاحتياطي ⏸</span> (أنت في قائمة الانتظار بناءً على أسبقية الطلب)</p>`;
+        } else if (item.status === 'REJECTED') {
+          statusHtml = `
+            <p><strong>الحالة:</strong> <span style="color: #c0392b; font-weight: bold;">مرفوض ✖</span></p>
+            <div style="background-color: #fdf2f2; color: #982c2c; padding: 10px; border-radius: 6px; margin-top: 5px;">
+              <strong>سبب الرفض:</strong> ${escapeHtml(item.rejection_reason) || 'لم يتم ذكر سبب'}
+            </div>
+          `;
+        }
+
+        div.innerHTML = `
+          <h4><i class="fas fa-user-md"></i> الأخصائي: ${escapeHtml(item.specialist_name)} (${escapeHtml(item.specialist_type) || 'أخصائي'})</h4>
+          <p><strong>الطفل:</strong> ${escapeHtml(item.child_name)}</p>
+          <p><strong>تفاصيل الطلب:</strong> ${escapeHtml(item.notes) || 'لا يوجد'}</p>
+          <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;">
+          ${statusHtml}
+        `;
+        container.appendChild(div);
+      });
+    } else {
+      container.innerHTML = `
+        <div class="empty-state">
+          <h3>لا توجد لديك أي حجوزات حالية</h3>
+        </div>`;
+    }
+  } catch (err) {
+    console.error('خطأ في جلب الحجوزات:', err);
+  }
 }
