@@ -9,8 +9,10 @@ bassira-API.txt
 send_otp.php
 send_reset_otp.php
 
+
 # FILE API
 contact.php
+send_reminders.php
 
 # Exclude Admin Folder
 admin/
