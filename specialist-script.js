@@ -213,9 +213,62 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // --- 9. الاستدعاء الأولي عند تحميل الصفحة ---
+  // --- 9. ربط مستمعات الأحداث للنوافذ المنبثقة للنوافل الخاصة بالمواعيد ---
+  document.getElementById('closeAcceptModal')?.addEventListener('click', () => {
+    document.getElementById('acceptAppointmentModal').classList.add('hidden');
+  });
+
+  document.getElementById('closeRejectModal')?.addEventListener('click', () => {
+    document.getElementById('rejectAppointmentModal').classList.add('hidden');
+  });
+
+  // نموذج إرسال القبول
+  document.getElementById('acceptAppointmentForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    formData.append('status', 'ACCEPTED');
+
+    try {
+      const res = await fetch('update_appointment_status.php', { method: 'POST', body: formData });
+      const result = await res.json();
+
+      if (result.status === 'success') {
+        alert('✅ ' + result.message);
+        document.getElementById('acceptAppointmentModal').classList.add('hidden');
+        loadAppointments();
+      } else {
+        alert('❌ ' + result.message);
+      }
+    } catch (err) {
+      alert('❌ حدث خطأ في الاتصال بالسيرفر.');
+    }
+  });
+
+  // نموذج إرسال الرفض
+  document.getElementById('rejectAppointmentForm')?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    formData.append('status', 'REJECTED');
+
+    try {
+      const res = await fetch('update_appointment_status.php', { method: 'POST', body: formData });
+      const result = await res.json();
+
+      if (result.status === 'success') {
+        alert('✅ ' + result.message);
+        document.getElementById('rejectAppointmentModal').classList.add('hidden');
+        loadAppointments();
+      } else {
+        alert('❌ ' + result.message);
+      }
+    } catch (err) {
+      alert('❌ حدث خطأ في الاتصال بالسيرفر.');
+    }
+  });
+
+  // --- 10. الاستدعاء الأولي عند تحميل الصفحة ---
   loadSpecialistProfile();
-  loadAppointments(); // تحميل المواعيد مباشرة لأن تبويبتها هي النشطة افتراضياً
+  loadAppointments();
 
   // ربط فلتر اختيار الطفل
   document.getElementById('filterChildSelect')?.addEventListener('change', (e) => {
@@ -249,14 +302,17 @@ async function loadAppointments() {
         div.style.backgroundColor = '#ffffff';
 
         let statusHtml = '';
-        const dateStr = item.booking_date ? item.booking_date : 'غير محدد';
-        const timeStr = item.booking_time ? item.booking_time : 'غير محدد';
+        // جلب قيمة التاريخ والوقت الصحيحة بغض النظر عن الاسم القادم من الاستعلام
+        const appDate = item.appointment_date || item.booking_date || '';
+        const appTime = item.appointment_time || item.booking_time || '';
+        const dateStr = appDate ? appDate : 'غير محدد';
+        const timeStr = appTime ? appTime : 'غير محدد';
 
         if (item.status === 'PENDING') {
           statusHtml = `
             <p><strong>الحالة:</strong> <span style="color: #e67e22; font-weight: bold;">قيد الانتظار ⏳</span></p>
             <div class="action-buttons" style="margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap;">
-              <button class="btn-primary" onclick="openAcceptModal(${item.id}, '${item.booking_date || ''}', '${item.booking_time || ''}')" style="background-color: #28a745; width: auto; padding: 6px 14px;">
+              <button class="btn-primary" onclick="openAcceptModal(${item.id}, '${appDate}', '${appTime}')" style="background-color: #28a745; width: auto; padding: 6px 14px;">
                 <i class="fas fa-check"></i> قبول وتحديد موعد
               </button>
               <button class="btn-primary" onclick="changeStatusDirectly(${item.id}, 'WAITLIST')" style="background-color: #f39c12; width: auto; padding: 6px 14px;">
@@ -271,7 +327,7 @@ async function loadAppointments() {
           statusHtml = `
             <p><strong>الحالة:</strong> <span style="color: #f39c12; font-weight: bold;">في قائمة الانتظار ⏸</span></p>
             <div class="action-buttons" style="margin-top: 10px; display: flex; gap: 8px;">
-              <button class="btn-primary" onclick="openAcceptModal(${item.id}, '${item.booking_date || ''}', '${item.booking_time || ''}')" style="background-color: #28a745; width: auto; padding: 6px 14px;">
+              <button class="btn-primary" onclick="openAcceptModal(${item.id}, '${appDate}', '${appTime}')" style="background-color: #28a745; width: auto; padding: 6px 14px;">
                 <i class="fas fa-check"></i> قبول الموعد الآن
               </button>
               <button class="btn-primary" onclick="openRejectModal(${item.id})" style="background-color: #dc3545; width: auto; padding: 6px 14px;">
@@ -349,58 +405,6 @@ async function changeStatusDirectly(appointmentId, status) {
   }
 }
 
-// ربط مستمعات الأحداث للنوافذ المنبثقة
-document.getElementById('closeAcceptModal')?.addEventListener('click', () => {
-  document.getElementById('acceptAppointmentModal').classList.add('hidden');
-});
-
-document.getElementById('closeRejectModal')?.addEventListener('click', () => {
-  document.getElementById('rejectAppointmentModal').classList.add('hidden');
-});
-
-// نموذج إرسال القبول
-document.getElementById('acceptAppointmentForm')?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const formData = new FormData(e.target);
-  formData.append('status', 'ACCEPTED');
-
-  try {
-    const res = await fetch('update_appointment_status.php', { method: 'POST', body: formData });
-    const result = await res.json();
-
-    if (result.status === 'success') {
-      alert('✅ ' + result.message);
-      document.getElementById('acceptAppointmentModal').classList.add('hidden');
-      loadAppointments();
-    } else {
-      alert('❌ ' + result.message);
-    }
-  } catch (err) {
-    alert('❌ حدث خطأ في الاتصال بالسيرفر.');
-  }
-});
-
-// نموذج إرسال الرفض
-document.getElementById('rejectAppointmentForm')?.addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const formData = new FormData(e.target);
-  formData.append('status', 'REJECTED');
-
-  try {
-    const res = await fetch('update_appointment_status.php', { method: 'POST', body: formData });
-    const result = await res.json();
-
-    if (result.status === 'success') {
-      alert('✅ ' + result.message);
-      document.getElementById('rejectAppointmentModal').classList.add('hidden');
-      loadAppointments();
-    } else {
-      alert('❌ ' + result.message);
-    }
-  } catch (err) {
-    alert('❌ حدث خطأ في الاتصال بالسيرفر.');
-  }
-});
 // جلب المستندات والتقارير الطبية
 async function loadMedicalFiles(childId = 'all') {
   const container = document.getElementById('medicalFilesContainer');
