@@ -6,11 +6,15 @@ session_start();
 
 require_once 'db.php';
 
-ob_clean();
+// دالة مساعدة لضمان إرجاع JSON نظيف وبدون أخطاء
+function sendJsonResponse($data) {
+    if (ob_get_length()) ob_clean();
+    echo json_encode($data, JSON_UNESCAPED_UNICODE);
+    exit();
+}
 
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true || empty($_SESSION['user_code'])) {
-    echo json_encode(['status' => 'error', 'message' => 'غير مصرح بالوصول، يرجى إعادة تسجيل الدخول']);
-    exit();
+    sendJsonResponse(['status' => 'error', 'message' => 'غير مصرح بالوصول، يرجى إعادة تسجيل الدخول']);
 }
 
 try {
@@ -20,8 +24,7 @@ try {
     $specRow = $stmtUser->fetch(PDO::FETCH_ASSOC);
 
     if (!$specRow) {
-        echo json_encode(['status' => 'error', 'message' => 'حساب الأخصائي غير موجود']);
-        exit();
+        sendJsonResponse(['status' => 'error', 'message' => 'حساب الأخصائي غير موجود']);
     }
 
     $specialistId    = $specRow['id'];
@@ -32,8 +35,7 @@ try {
     $rejectionReason = trim($_POST['rejection_reason'] ?? '');
 
     if (!$appointmentId || !$newStatus) {
-        echo json_encode(['status' => 'error', 'message' => 'معرف الموعد والحالة مطلوبان']);
-        exit();
+        sendJsonResponse(['status' => 'error', 'message' => 'معرف الموعد والحالة مطلوبان']);
     }
 
     // التأكد أن الموعد يخص الأخصائي الحالي
@@ -42,8 +44,7 @@ try {
     $appointment = $stmtChk->fetch(PDO::FETCH_ASSOC);
 
     if (!$appointment) {
-        echo json_encode(['status' => 'error', 'message' => 'الموعد غير موجود أو لا تملك صلاحية تعديله']);
-        exit();
+        sendJsonResponse(['status' => 'error', 'message' => 'الموعد غير موجود أو لا تملك صلاحية تعديله']);
     }
 
     // -------------------------------------------------------------
@@ -51,59 +52,49 @@ try {
     // -------------------------------------------------------------
 
     if ($newStatus === 'ACCEPTED') {
-        // عند القبول يجب تحديد التاريخ والوقت إذا لم ينقلا مسبقاً
         $finalDate = !empty($appointmentDate) ? $appointmentDate : $appointment['appointment_date'];
         $finalTime = !empty($appointmentTime) ? $appointmentTime : $appointment['appointment_time'];
 
         if (empty($finalDate) || empty($finalTime)) {
-            echo json_encode(['status' => 'error', 'message' => 'يرجى تحديد التاريخ والوقت لقبول الموعد']);
-            exit();
+            sendJsonResponse(['status' => 'error', 'message' => 'يرجى تحديد التاريخ والوقت لقبول الموعد']);
         }
 
         $stmtUpd = $pdo->prepare("UPDATE appointments SET status = 'ACCEPTED', appointment_date = ?, appointment_time = ? WHERE id = ?");
         $stmtUpd->execute([$finalDate, $finalTime, $appointmentId]);
 
-        echo json_encode(['status' => 'success', 'message' => 'تم قبول الموعد وتحديد توقيته بنجاح.']);
-        exit();
+        sendJsonResponse(['status' => 'success', 'message' => 'تم قبول الموعد وتحديد توقيته بنجاح.']);
     } 
     
     elseif ($newStatus === 'REJECTED') {
-        // الرفض يتطلب كتابة سبب الرفض
         if (empty($rejectionReason)) {
-            echo json_encode(['status' => 'error', 'message' => 'يرجى إدخال سبب رفض الموعد']);
-            exit();
+            sendJsonResponse(['status' => 'error', 'message' => 'يرجى إدخال سبب رفض الموعد']);
         }
 
         $stmtUpd = $pdo->prepare("UPDATE appointments SET status = 'REJECTED', rejection_reason = ? WHERE id = ?");
         $stmtUpd->execute([$rejectionReason, $appointmentId]);
 
-        echo json_encode(['status' => 'success', 'message' => 'تم رفض الموعد وتسجيل السبب بنجاح.']);
-        exit();
+        sendJsonResponse(['status' => 'success', 'message' => 'تم رفض الموعد وتسجيل السبب بنجاح.']);
     } 
 
     elseif ($newStatus === 'WAITLIST') {
-        // الإحالة لقائمة الانتظار
         $stmtUpd = $pdo->prepare("UPDATE appointments SET status = 'WAITLIST' WHERE id = ?");
         $stmtUpd->execute([$appointmentId]);
 
-        echo json_encode(['status' => 'success', 'message' => 'تم نقل الطلب إلى قائمة الانتظار بنجاح.']);
-        exit();
+        sendJsonResponse(['status' => 'success', 'message' => 'تم نقل الطلب إلى قائمة الانتظار بنجاح.']);
     } 
 
     elseif ($newStatus === 'ATTENDED') {
-        // 1. تسجيل حضور الموعد وحذفه من الجدول النشط (أو تحديثه)
-        // تفريغ سجل الموعد للحفاظ على خفة الجدول
+        // تسجيل حضور الموعد وحذفه من الجدول النشط
         $stmtDel = $pdo->prepare("DELETE FROM appointments WHERE id = ?");
         $stmtDel->execute([$appointmentId]);
 
-        // 2. التصعيد التلقائي: البحث عن أول موعد في قائمة الانتظار (WAITLIST) بحسب الأقدمية
+        // التصعيد التلقائي: البحث عن أول موعد في قائمة الانتظار (WAITLIST)
         $stmtEsc = $pdo->prepare("SELECT id FROM appointments WHERE specialist_id = ? AND status = 'WAITLIST' ORDER BY id ASC LIMIT 1");
         $stmtEsc->execute([$specialistId]);
         $nextWaitlist = $stmtEsc->fetch(PDO::FETCH_ASSOC);
 
         $escalated = false;
         if ($nextWaitlist) {
-            // تحويل أول موعد احتياطي تلقائياً إلى PENDING ليقوم الأخصائي بتحديد موعد له
             $stmtUpdWait = $pdo->prepare("UPDATE appointments SET status = 'PENDING' WHERE id = ?");
             $stmtUpdWait->execute([$nextWaitlist['id']]);
             $escalated = true;
@@ -114,13 +105,12 @@ try {
             $msg .= ' وتم تلقائياً تصعيد طلب من قائمة الانتظار مخصص لك لمراجعته!';
         }
 
-        echo json_encode(['status' => 'success', 'message' => $msg]);
-        exit();
+        sendJsonResponse(['status' => 'success', 'message' => $msg]);
     }
 
-    echo json_encode(['status' => 'error', 'message' => 'حالة غير معروفة']);
+    sendJsonResponse(['status' => 'error', 'message' => 'حالة غير معروفة']);
 
 } catch (PDOException $e) {
-    echo json_encode(['status' => 'error', 'message' => 'خطأ في قاعدة البيانات: ' . $e->getMessage()]);
+    sendJsonResponse(['status' => 'error', 'message' => 'خطأ في قاعدة البيانات: ' . $e->getMessage()]);
 }
 ?>
