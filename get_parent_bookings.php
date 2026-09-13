@@ -3,12 +3,12 @@ session_start();
 header('Content-Type: application/json');
 require_once 'db.php'; // عدل اسم الملف بحسب ما هو لديك
 
-if (!isset($_SESSION['user_id'])) {
+if (!isset($_SESSION['user_code'])) {
     echo json_encode(['status' => 'error', 'message' => 'غير مصرح بالوصول']);
     exit;
 }
 
-$parent_id = $_SESSION['user_id'];
+$parent_id = $_SESSION['user_code'];
 
 try {
     // جلب مواعيد أطفال ولي الأمر مع تفاصيل الأخصائي والطفل
