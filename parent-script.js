@@ -151,6 +151,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // تشغيل جلب البيانات الديناميكي حسب التبويب النشط
       if (activeTabId === 'appointments-section') {
         loadSpecialists();
+        }
     });
   });
 
