@@ -152,6 +152,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (activeTabId === 'appointments-section') {
         loadSpecialists();
         }
+else if (activeTabId === 'my-bookings-section') {
+  if (typeof window.loadParentBookings === 'function') {
+    window.loadParentBookings();
+  }
+}
     });
   });
 
