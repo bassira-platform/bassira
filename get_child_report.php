@@ -49,7 +49,7 @@ $healthInfo = $stmtHealth->fetch(PDO::FETCH_ASSOC) ?: [
 
 // 3. جلب نتائج الألعاب
 $stmtResults = $conn->prepare("
-    SELECT asd_indicator, sld_indicator, social_preference_score, fixation_duration_ms, saccade_velocity, created_at
+    SELECT game_id, asd_indicator, sld_indicator, social_preference_score, fixation_duration_ms, saccade_velocity, created_at
     FROM game_results 
     WHERE child_id = :child_id
     ORDER BY created_at DESC
@@ -58,7 +58,7 @@ $stmtResults->bindParam(":child_id", $child_id);
 $stmtResults->execute();
 $allResults = $stmtResults->fetchAll(PDO::FETCH_ASSOC);
 
-// 4. جلب التقارير والإصدارات المخزنة سابقاً
+// 4. جلب التقارير وإصدارات PDF المخزنة
 $stmtReports = $conn->prepare("
     SELECT id, file_title, file_path, version, moyenne_score, created_at 
     FROM diagnosis_reports 
@@ -71,7 +71,7 @@ $allReports = $stmtReports->fetchAll(PDO::FETCH_ASSOC);
 
 $latestReport = !empty($allReports) ? $allReports[0] : null;
 
-// إرجاع البيانات البرمجية الكاملة
+// إرجاع البيانات في هيكل JSON
 echo json_encode([
     "status" => "success",
     "child" => $childInfo,
