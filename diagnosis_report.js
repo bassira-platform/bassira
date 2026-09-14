@@ -1,74 +1,95 @@
-let currentChildId = null;
+// متغيرات عامة لمنع التكرار
+let currentChildReports = [];
 
-// فتح نافذة التقرير وجلب أحدث إصدار مع قائمة الأرشيف
-function openReportModal(childId) {
-    currentChildId = childId;
+/**
+ * فتح نافذة التقرير وجلب البيانات من الخادم
+ * @param {number} childId - معرّف الطفل
+ */
+async function openReportModal(childId) {
     const modal = document.getElementById('reportModal');
+    const versionSelect = document.getElementById('reportVersionSelect');
+    const iframe = document.getElementById('pdfPreviewIframe');
+    const btnZip = document.getElementById('btnDownloadZip');
+
     if (!modal) return;
 
+    // إظهار النافذة وتصفير المحتوى القديم
     modal.style.display = 'flex';
+    modal.classList.remove('hidden');
+    versionSelect.innerHTML = '<option value="">جاري التحميل...</option>';
+    iframe.src = '';
 
-    fetch(`get_child_report.php?child_id=${childId}`)
-        .then(res => res.json())
-        .then(data => {
-            if (data.status === 'success') {
-                // تعبئة البيانات الأساسية
-                if (document.getElementById('rep-child-name')) document.getElementById('rep-child-name').innerText = data.child.child_name || '-';
-                if (document.getElementById('rep-child-uid')) document.getElementById('rep-child-uid').innerText = data.child.uid || '-';
+    try {
+        const response = await fetch(`get_child_report.php?child_id=${childId}`);
+        const data = await response.json();
 
-                // تعبئة قائمة الإصدارات المتاحة (History)
-                const versionSelect = document.getElementById('reportVersionSelect');
-                if (versionSelect) {
-                    versionSelect.innerHTML = '';
-                    if (data.all_reports && data.all_reports.length > 0) {
-                        data.all_reports.forEach(rep => {
-                            const opt = document.createElement('option');
-                            opt.value = rep.file_path;
-                            opt.textContent = `${rep.version} (${new Date(rep.created_at).toLocaleDateString('ar-EG')}) - معدل: ${rep.moyenne_score}`;
-                            versionSelect.appendChild(opt);
-                        });
-                        
-                        // تعيين عارض الـ PDF على أحدث ملف
-                        previewPDF(data.latest_report.file_path);
-                    } else {
-                        versionSelect.innerHTML = '<option value="">لا توجد تقارير مولدة بعد</option>';
-                    }
-                }
+        if (data.status === 'success') {
+            currentChildReports = data.all_reports || [];
 
-                // ربط زر تحميل الأرشيف الكامل ZIP
-                const zipBtn = document.getElementById('btnDownloadZip');
-                if (zipBtn) {
-                    zipBtn.onclick = () => {
-                        window.location.href = `download_all_reports.php?child_id=${childId}`;
-                    };
-                }
-
-            } else {
-                alert(data.message || 'حدث خطأ أثناء جلب بيانات التقرير');
+            if (currentChildReports.length === 0) {
+                versionSelect.innerHTML = '<option value="">لا توجد تقارير مخزنة لهذا الطفل بعد</option>';
+                iframe.src = 'about:blank';
+                return;
             }
-        })
-        .catch(err => {
-            console.error('خطأ أثناء جلب التقرير:', err);
-        });
-}
 
-// تغيير التقرير المعروض بناءً على اختيار الإصدار من القائمة المنسدلة
-function onVersionChange(selectEl) {
-    const filePath = selectEl.value;
-    if (filePath) {
-        previewPDF(filePath);
+            // ملء القائمة المنسدلة بالإصدارات المتاحة
+            versionSelect.innerHTML = '';
+            currentChildReports.forEach((report, index) => {
+                const opt = document.createElement('option');
+                opt.value = report.file_path;
+                opt.textContent = `${report.file_title} (${report.version}) - ${report.created_at}`;
+                if (index === 0) opt.selected = true; // اختيار أحدث تقرير افتراضياً
+                versionSelect.appendChild(opt);
+            });
+
+            // عرض التقرير الأحدث في عارض الـ iframe
+            const latestFilePath = currentChildReports[0].file_path;
+            iframe.src = latestFilePath;
+
+            // ضبط رابط تحميل الأرشيف ZIP
+            if (btnZip) {
+                btnZip.onclick = () => downloadAllReportsZip(childId);
+            }
+
+        } else {
+            alert(data.message || 'حدث خطأ أثناء جلب التقرير');
+            closeReportModal();
+        }
+    } catch (err) {
+        console.error('خطأ في الاتصال:', err);
+        alert('تعذر الاتصال بالخادم لجلب بيانات التقرير.');
+        closeReportModal();
     }
 }
 
-// عرض ملف الـ PDF داخل iframe في النافذة المنبثقة
-function previewPDF(filePath) {
+/**
+ * عند تغيير إصدار التقرير من القائمة المنسدلة
+ */
+function onVersionChange(selectElem) {
     const iframe = document.getElementById('pdfPreviewIframe');
-    if (iframe) {
-        iframe.src = filePath;
+    if (iframe && selectElem.value) {
+        iframe.src = selectElem.value;
     }
 }
 
+/**
+ * إغلاق النافذة المنبثقة للتقرير
+ */
 function closeReportModal() {
     const modal = document.getElementById('reportModal');
-    if (modal) modal.style.display = 'none';
+    const iframe = document.getElementById('pdfPreviewIframe');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.classList.add('hidden');
+    }
+    if (iframe) {
+        iframe.src = '';
+    }
+}
+
+/**
+ * دالة تحضير تحميل ملف ZIP لجميع تقارير الطفل
+ */
+function downloadAllReportsZip(childId) {
+    window.location.href = `download_reports_zip.php?child_id=${childId}`;
 }
