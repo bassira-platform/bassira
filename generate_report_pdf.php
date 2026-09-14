@@ -1,4 +1,9 @@
+
 <?php
+// إيقاف طباعة الأخطاء النصية المباشرة حتى لا تفسد استجابة الـ JSON
+ini_set('display_errors', 0);
+error_reporting(E_ALL);
+
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 
@@ -10,87 +15,73 @@ $password = "Bassira2026";
 try {
     $conn = new PDO("mysql:host=" . $host . ";dbname=" . $db_name . ";charset=utf8mb4", $username, $password);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch(PDOException $e) {
-    echo json_encode(["status" => "error", "message" => "فشل الاتصال: " . $e->getMessage()]);
-    exit();
-}
 
-$child_id = isset($_POST['child_id']) ? intval($_POST['child_id']) : (isset($_GET['child_id']) ? intval($_GET['child_id']) : 0);
-
-if ($child_id <= 0) {
-    echo json_encode(["status" => "error", "message" => "معرف الطفل غير صحيح"]);
-    exit();
-}
-
-// 1. حساب رقم الإصدار الجديد (Versioning Logic)
-$stmtVersion = $conn->prepare("SELECT version FROM diagnosis_reports WHERE child_id = :child_id ORDER BY id DESC LIMIT 1");
-$stmtVersion->bindParam(":child_id", $child_id);
-$stmtVersion->execute();
-$lastReport = $stmtVersion->fetch(PDO::FETCH_ASSOC);
-
-if (!$lastReport) {
-    $newVersion = "v-1-0";
-} else {
-    // استخراج الرقم الأخير وزيادته بمقدار 1 (مثال: v-1-0 -> v-1-1)
-    $parts = explode('-', $lastReport['version']);
-    $subVersion = intval(end($parts)) + 1;
-    $newVersion = "v-1-" . $subVersion;
-}
-
-// 2. حساب المتوسط التراكمي (Moyenne) لكل الجلسات
-$stmtResults = $conn->prepare("SELECT asd_indicator, sld_indicator FROM game_results WHERE child_id = :child_id");
-$stmtResults->bindParam(":child_id", $child_id);
-$stmtResults->execute();
-$allResults = $stmtResults->fetchAll(PDO::FETCH_ASSOC);
-
-$totalSessions = count($allResults);
-$scoreSum = 0;
-
-foreach ($allResults as $res) {
-    // تحويل مؤشرات الخطر إلى نقاط لحساب المتوسط (HIGH=3, MODERATE=2, LOW=1)
-    $val = 1;
-    if ($res['asd_indicator'] === 'HIGH_RISK' || $res['sld_indicator'] === 'HIGH_RISK') {
-        $val = 3;
-    } elseif ($res['asd_indicator'] === 'MODERATE_RISK' || $res['sld_indicator'] === 'MODERATE_RISK') {
-        $val = 2;
+    $child_id = isset($_POST['child_id']) ? intval($_POST['child_id']) : 0;
+    if ($child_id <= 0) {
+        throw new Exception("لم يتم استلام معرف الطفل بشكل صحيح.");
     }
-    $scoreSum += $val;
+
+    // 1. قراءة البيانات وحساب متوسط النقاط (moyenne_score)
+    $stmtScores = $conn->prepare("
+        SELECT social_preference_score, fixation_duration_ms 
+        FROM game_results 
+        WHERE child_id = :child_id 
+        ORDER BY id DESC LIMIT 5
+    ");
+    $stmtScores->execute([':child_id' => $child_id]);
+    $results = $stmtScores->fetchAll(PDO::FETCH_ASSOC);
+
+    $avgScore = 0;
+    if (count($results) > 0) {
+        $total = 0;
+        foreach ($results as $r) {
+            $total += floatval($r['social_preference_score']);
+        }
+        $avgScore = round(($total / count($results)) * 100, 2);
+    }
+
+    // 2. تحدد إصدار التقرير الجديد (v-1-0, v-1-1...)
+    $stmtVer = $conn->prepare("SELECT COUNT(*) FROM diagnosis_reports WHERE child_id = :child_id");
+    $stmtVer->execute([':child_id' => $child_id]);
+    $count = $stmtVer->fetchColumn();
+
+    $version = "v-1-" . $count;
+    $fileTitle = "تقرير تقييم الطفل - إصدار " . $version;
+    $fileName = "reports/report_child_" . $child_id . "_" . time() . ".pdf";
+
+    // 3. التأكد من وجود مجلد التقارير
+    if (!file_exists('reports')) {
+        mkdir('reports', 0777, true);
+    }
+
+    // 4. حفظ بيانات التقرير في قاعدة البيانات
+    $stmtInsert = $conn->prepare("
+        INSERT INTO diagnosis_reports (child_id, file_title, file_path, version, moyenne_score, created_at)
+        VALUES (:child_id, :file_title, :file_path, :version, :moyenne_score, NOW())
+    ");
+    $stmtInsert->execute([
+        ':child_id' => $child_id,
+        ':file_title' => $fileTitle,
+        ':file_path' => $fileName,
+        ':version' => $version,
+        ':moyenne_score' => $avgScore
+    ]);
+
+    // إرجاع استجابة نجاح سليمة بصيغة JSON
+    echo json_encode([
+        "status" => "success",
+        "message" => "تم إنشاء التقرير بنجاح",
+        "version" => $version,
+        "moyenne_score" => $avgScore,
+        "file_path" => $fileName
+    ]);
+
+} catch (Exception $e) {
+    // إرجاع استجابة الخطأ بصيغة JSON لمنع SyntaxError في الفرونت إند
+    http_response_code(500);
+    echo json_encode([
+        "status" => "error",
+        "message" => $e->getMessage()
+    ]);
 }
-
-$moyenne = $totalSessions > 0 ? round($scoreSum / $totalSessions, 2) : 1.0;
-
-// 3. إنشاء مسار وحفظ بيانات التقرير في قاعدة البيانات
-$stmtChild = $conn->prepare("SELECT full_name FROM children WHERE id = :child_id");
-$stmtChild->bindParam(":child_id", $child_id);
-$stmtChild->execute();
-$child = $stmtChild->fetch(PDO::FETCH_ASSOC);
-
-$childName = $child ? $child['full_name'] : "child";
-$fileName = "report_" . $child_id . "_" . $newVersion . ".pdf";
-$filePath = "reports/" . $fileName;
-$fileTitle = "تقرير تشخيص - " . $childName . " - " . $newVersion;
-
-// إنشاء مجلد reports إذا لم يكن موجوداً
-if (!file_exists('reports')) {
-    mkdir('reports', 0777, true);
-}
-
-$stmtSave = $conn->prepare("
-    INSERT INTO diagnosis_reports (child_id, file_title, file_path, file_type, version, moyenne_score) 
-    VALUES (:child_id, :file_title, :file_path, 'PDF', :version, :moyenne)
-");
-$stmtSave->bindParam(":child_id", $child_id);
-$stmtSave->bindParam(":file_title", $file_title);
-$stmtSave->bindParam(":file_path", $filePath);
-$stmtSave->bindParam(":version", $newVersion);
-$stmtSave->bindParam(":moyenne", $moyenne);
-$stmtSave->execute();
-
-echo json_encode([
-    "status" => "success",
-    "message" => "تم إنشاء إصدار التقرير بنجاح",
-    "version" => $newVersion,
-    "file_path" => $filePath,
-    "moyenne" => $moyenne
-]);
 ?>
