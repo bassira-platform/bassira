@@ -208,12 +208,16 @@ async function onGameComplete(cId) {
             method: 'POST',
             body: formData
         });
+
         const result = await res.json();
-        if (result.status === 'success') {
+        
+        if (res.ok && result.status === 'success') {
             console.log(`✅ تم توليد التقرير بنجاح: ${result.version}`);
+        } else {
+            console.error(`❌ خطأ من الخادم: ${result.message}`);
         }
     } catch (err) {
-        console.error('فشل في توليد إصدار التقرير:', err);
+        console.error('فشل في التوافق مع التقرير:', err);
     }
 }
 </script>
