@@ -153,14 +153,14 @@ if (isset($_GET['logout'])) {
         <h2 class="section-title">مركز الألعاب والتحديات 🎮</h2>
         <div class="games-grid">
             
-            <!-- اللعبة الأولى: مغامرة فرفور (التتبع الاستكشافي) -->
+            <!-- اللعبة الأولى: حديقة الاوان (التتبع الاستكشافي) -->
             <div class="game-card">
                 <div class="game-banner game-1-bg">
                     <span style="font-size: 40px;">🐿️</span>
                 </div>
                 <div class="game-body">
-                    <h3>مغامرة فرفور في الغابة السحرية</h3>
-                    <p>ساعد السنجاب فرفور في جمع الجوز واستكشاف الكائنات الحية والرموز بعينيك!</p>
+                    <h3>حديقة الشكال والالوان</h3>
+                    <p>تتبع البلونات بعينيك وفرقعها بيديك </p>
                     <a href="game2.html?child_id=<?php echo $_SESSION['child_id']; ?>" class="play-btn">ابدأ اللعب الآن 🚀</a>
                 </div>
             </div>
