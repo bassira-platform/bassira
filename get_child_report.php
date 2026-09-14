@@ -47,7 +47,7 @@ $healthInfo = $stmtHealth->fetch(PDO::FETCH_ASSOC) ?: [
     "blood_type" => "غير محدد", "allergies" => "لا يوجد", "medical_conditions" => "لا يوجد"
 ];
 
-// 3. جلب نتائج الألعاب والتقييم الحركي البصري
+// 3. جلب نتائج الألعاب
 $stmtResults = $conn->prepare("
     SELECT asd_indicator, sld_indicator, social_preference_score, fixation_duration_ms, saccade_velocity, created_at
     FROM game_results 
@@ -58,42 +58,26 @@ $stmtResults->bindParam(":child_id", $child_id);
 $stmtResults->execute();
 $allResults = $stmtResults->fetchAll(PDO::FETCH_ASSOC);
 
-// حساب حالات الخطر العامة
-$asd_status = "LOW_RISK";
-$sld_status = "LOW_RISK";
-
-foreach ($allResults as $res) {
-    if ($res['asd_indicator'] === 'HIGH_RISK') $asd_status = 'HIGH_RISK';
-    elseif ($res['asd_indicator'] === 'MODERATE_RISK' && $asd_status !== 'HIGH_RISK') $asd_status = 'MODERATE_RISK';
-
-    if ($res['sld_indicator'] === 'HIGH_RISK') $sld_status = 'HIGH_RISK';
-    elseif ($res['sld_indicator'] === 'MODERATE_RISK' && $sld_status !== 'HIGH_RISK') $sld_status = 'MODERATE_RISK';
-}
-
-// 4. تسجبل التقرير في جدول diagnosis_reports
-$file_title = "تقرير تشخيص - " . $childInfo['child_name'] . " - " . date("Y-m-d");
-$file_path = "reports/report_child_" . $child_id . "_" . time() . ".pdf";
-
-$stmtSaveReport = $conn->prepare("
-    INSERT INTO diagnosis_reports (child_id, file_title, file_path, file_type) 
-    VALUES (:child_id, :file_title, :file_path, 'PDF')
+// 4. جلب التقارير والإصدارات المخزنة سابقاً
+$stmtReports = $conn->prepare("
+    SELECT id, file_title, file_path, version, moyenne_score, created_at 
+    FROM diagnosis_reports 
+    WHERE child_id = :child_id 
+    ORDER BY id DESC
 ");
-$stmtSaveReport->bindParam(":child_id", $child_id);
-$stmtSaveReport->bindParam(":file_title", $file_title);
-$stmtSaveReport->bindParam(":file_path", $file_path);
-$stmtSaveReport->execute();
+$stmtReports->bindParam(":child_id", $child_id);
+$stmtReports->execute();
+$allReports = $stmtReports->fetchAll(PDO::FETCH_ASSOC);
+
+$latestReport = !empty($allReports) ? $allReports[0] : null;
 
 // إرجاع البيانات البرمجية الكاملة
 echo json_encode([
     "status" => "success",
-    "report_id" => $conn->lastInsertId(),
     "child" => $childInfo,
     "health" => $healthInfo,
-    "assessment" => [
-        "asd_status" => $asd_status,
-        "sld_status" => $sld_status,
-        "total_sessions" => count($allResults),
-        "game_logs" => $allResults
-    ]
+    "latest_report" => $latestReport,
+    "all_reports" => $allReports,
+    "total_sessions" => count($allResults)
 ]);
 ?>

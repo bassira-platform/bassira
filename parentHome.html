@@ -334,73 +334,31 @@
   </div>
 
   <!-- النافذة المنبثقة 7: نافذة عرض تقرير التشخيص الطبي وتوليد PDF -->
-  <div id="reportModal" class="modal-backdrop" style="display: none;">
-      <div class="modal-card">
-          <div class="modal-header">
-              <h3>📋 تقرير التشخيص البصري والطبي</h3>
-              <button class="close-btn" onclick="closeReportModal()">✕</button>
-          </div>
-          
-          <div id="pdf-content" class="modal-body">
-              <div class="report-header">
-                  <img src="logo.png" alt="شعار المنصة" class="report-logo">
-                  <h2>منصة بصيرة للتقييم النمائي البصري 👁️</h2>
-                  <p id="rep-date" class="report-date"></p>
-              </div>
+ <div id="reportModal" class="modal hidden" style="display:none;">
+  <div class="modal-content report-modal-box">
+    <div class="modal-header">
+      <h3>📋 تقرير التشخيص والتطور</h3>
+      <button onclick="closeReportModal()" class="close-btn">&times;</button>
+    </div>
 
-              <!-- معلومات الطفل وولي الأمر -->
-              <div class="grid-2">
-                  <div class="info-box">
-                      <h4>بيانات الطفل</h4>
-                      <p><strong>الاسم:</strong> <span id="rep-child-name">-</span></p>
-                      <p><strong>المعرف الشخصي:</strong> <span id="rep-child-uid">-</span></p>
-                      <p><strong>تاريخ الميلاد:</strong> <span id="rep-child-dob">-</span></p>
-                      <p><strong>فصيلة الدم:</strong> <span id="rep-child-blood">-</span></p>
-                  </div>
-                  <div class="info-box">
-                      <h4>بيانات ولي الأمر</h4>
-                      <p><strong>الاسم:</strong> <span id="rep-parent-name">-</span></p>
-                      <p><strong>الهاتف:</strong> <span id="rep-parent-phone">-</span></p>
-                      <p><strong>البريد:</strong> <span id="rep-parent-email">-</span></p>
-                      <p><strong>العنوان:</strong> <span id="rep-parent-address">-</span></p>
-                  </div>
-              </div>
-
-              <!-- ملخص حالة التشخيص المبسطة للولي -->
-              <div class="diagnosis-summary">
-                  <h4>نتيجة التقييم البصري والنمائي (عبر الألعاب)</h4>
-                  <div class="indicators-container">
-                      <div class="indicator-card">
-                          <span>مؤشر التوحد (ASD):</span>
-                          <strong id="rep-asd-badge" class="badge">جاري التحميل...</strong>
-                      </div>
-                      <div class="indicator-card">
-                          <span>مؤشر صعوبات التعلم (SLD):</span>
-                          <strong id="rep-sld-badge" class="badge">جاري التحميل...</strong>
-                      </div>
-                  </div>
-              </div>
-
-              <!-- الملاحظات الطبية -->
-              <div class="info-box full-width">
-                  <h4>السجل الطبي والملاحظات</h4>
-                  <p><strong>الحساسية:</strong> <span id="rep-allergies">لا يوجد</span></p>
-                  <p><strong>الحالات الطبية المسجلة:</strong> <span id="rep-conditions">لا يوجد</span></p>
-              </div>
-
-              <!-- التوصية الموجهة للأخصائي -->
-              <div class="doctor-note">
-                  <strong>توصية موجهة للاخصائي:</strong>
-                  <p>تم إعداد هذا التقرير تلقائياً بناءً على تحليل حركة العين، التثبيت البصري، والاستجابة التفاعلية عبر ألعاب المنصة. يُرجى استخدام البيانات أعلاه كأداة مساعدة في التقييم الكلينيكي.</p>
-              </div>
-          </div>
-
-          <div class="modal-footer">
-              <button onclick="downloadPDF()" class="btn-download">تحميل التقرير (PDF) 📄</button>
-              <button onclick="closeReportModal()" class="btn-close">إغلاق</button>
-          </div>
+    <div class="modal-body">
+      <!-- شريط التحكم بالإصدارات والتحميل -->
+      <div class="report-controls" style="display:flex; gap:10px; margin-bottom:15px; align-items:center;">
+        <label for="reportVersionSelect">اختر الإصدار:</label>
+        <select id="reportVersionSelect" onchange="onVersionChange(this)" style="padding:6px; border-radius:4px; flex-grow:1;"></select>
+        
+        <button id="btnDownloadZip" class="btn-primary" style="background:#28a745;">
+          <i class="fas fa-file-archive"></i> تحميل الأرشيف الكامل (ZIP)
+        </button>
       </div>
+
+      <!-- عارض الـ PDF للمعاينة المباشرة -->
+      <div class="pdf-preview-container" style="width:100%; height:500px; border:1px solid #ccc;">
+        <iframe id="pdfPreviewIframe" src="" style="width:100%; height:100%; border:none;"></iframe>
+      </div>
+    </div>
   </div>
+</div>
 
   <!-- الفوتر -->
   <footer class="app-footer">

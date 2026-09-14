@@ -1,78 +1,74 @@
-let currentChildData = null;
+let currentChildId = null;
 
-// فتح النافذة وجلب بيانات التقرير للطفل المحدد
+// فتح نافذة التقرير وجلب أحدث إصدار مع قائمة الأرشيف
 function openReportModal(childId) {
+    currentChildId = childId;
     const modal = document.getElementById('reportModal');
     if (!modal) return;
 
     modal.style.display = 'flex';
-    document.getElementById('rep-date').innerText = 'تاريخ الإصدار: ' + new Date().toLocaleDateString('ar-EG');
 
     fetch(`get_child_report.php?child_id=${childId}`)
         .then(res => res.json())
         .then(data => {
             if (data.status === 'success') {
-                currentChildData = data;
-                
-                // تعبئة البيانات الشخصية
-                document.getElementById('rep-child-name').innerText = data.child.child_name || '-';
-                document.getElementById('rep-child-uid').innerText = data.child.uid || '-';
-                document.getElementById('rep-child-dob').innerText = data.child.birth_date || '-';
-                document.getElementById('rep-child-blood').innerText = data.health.blood_type || 'غير محدد';
+                // تعبئة البيانات الأساسية
+                if (document.getElementById('rep-child-name')) document.getElementById('rep-child-name').innerText = data.child.child_name || '-';
+                if (document.getElementById('rep-child-uid')) document.getElementById('rep-child-uid').innerText = data.child.uid || '-';
 
-                document.getElementById('rep-parent-name').innerText = data.child.parent_name || '-';
-                document.getElementById('rep-parent-phone').innerText = data.child.parent_phone || '-';
-                document.getElementById('rep-parent-email').innerText = data.child.parent_email || '-';
-                document.getElementById('rep-parent-address').innerText = data.child.parent_address || 'غير مدخل';
+                // تعبئة قائمة الإصدارات المتاحة (History)
+                const versionSelect = document.getElementById('reportVersionSelect');
+                if (versionSelect) {
+                    versionSelect.innerHTML = '';
+                    if (data.all_reports && data.all_reports.length > 0) {
+                        data.all_reports.forEach(rep => {
+                            const opt = document.createElement('option');
+                            opt.value = rep.file_path;
+                            opt.textContent = `${rep.version} (${new Date(rep.created_at).toLocaleDateString('ar-EG')}) - معدل: ${rep.moyenne_score}`;
+                            versionSelect.appendChild(opt);
+                        });
+                        
+                        // تعيين عارض الـ PDF على أحدث ملف
+                        previewPDF(data.latest_report.file_path);
+                    } else {
+                        versionSelect.innerHTML = '<option value="">لا توجد تقارير مولدة بعد</option>';
+                    }
+                }
 
-                document.getElementById('rep-allergies').innerText = data.health.allergies || 'لا يوجد';
-                document.getElementById('rep-conditions').innerText = data.health.medical_conditions || 'لا يوجد';
+                // ربط زر تحميل الأرشيف الكامل ZIP
+                const zipBtn = document.getElementById('btnDownloadZip');
+                if (zipBtn) {
+                    zipBtn.onclick = () => {
+                        window.location.href = `download_all_reports.php?child_id=${childId}`;
+                    };
+                }
 
-                // شارات التقييم
-                setupBadge('rep-asd-badge', data.assessment.asd_status);
-                setupBadge('rep-sld-badge', data.assessment.sld_status);
             } else {
                 alert(data.message || 'حدث خطأ أثناء جلب بيانات التقرير');
             }
         })
         .catch(err => {
-            console.error('Error fetching report:', err);
+            console.error('خطأ أثناء جلب التقرير:', err);
         });
 }
 
-function setupBadge(elementId, status) {
-    const el = document.getElementById(elementId);
-    if (!el) return;
+// تغيير التقرير المعروض بناءً على اختيار الإصدار من القائمة المنسدلة
+function onVersionChange(selectEl) {
+    const filePath = selectEl.value;
+    if (filePath) {
+        previewPDF(filePath);
+    }
+}
 
-    if (status === 'HIGH_RISK') {
-        el.innerText = 'خطر مرتفع (يتطلب استشارة)';
-        el.className = 'badge badge-high';
-    } else if (status === 'MODERATE_RISK') {
-        el.innerText = 'خطر متوسط (تحت الملاحظة)';
-        el.className = 'badge badge-mod';
-    } else {
-        el.innerText = 'طبيعي (خطر منخفض)';
-        el.className = 'badge badge-low';
+// عرض ملف الـ PDF داخل iframe في النافذة المنبثقة
+function previewPDF(filePath) {
+    const iframe = document.getElementById('pdfPreviewIframe');
+    if (iframe) {
+        iframe.src = filePath;
     }
 }
 
 function closeReportModal() {
     const modal = document.getElementById('reportModal');
     if (modal) modal.style.display = 'none';
-}
-
-// إنشاء وتحميل ملف الـ PDF
-function downloadPDF() {
-    const element = document.getElementById('pdf-content');
-    const childName = currentChildData ? currentChildData.child.child_name : 'الطفل';
-    
-    const opt = {
-        margin:       10,
-        filename:     `تقرير_تشخيص_${childName}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2 },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-    };
-
-    html2pdf().set(opt).from(element).save();
 }
