@@ -5,8 +5,9 @@ error_reporting(E_ALL);
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 
-// 1. استدعاء مكتبة tFPDF
-require_once('tfpdf/tfpdf.php');
+// 1. استدعاء ملف autoload الخاص بـ mPDF المرفوع يدوياً
+// قم بتعديل المسار 'mpdf/vendor/autoload.php' حسب اسم المجلد الذي رفعته
+require_once __DIR__ . '/mpdf/vendor/autoload.php';
 
 $host = "sql213.infinityfree.com";
 $db_name = "if0_42720560_bassira";
@@ -23,7 +24,7 @@ try {
         throw new Exception("لم يتم استلام معرف الطفل بشكل صحيح.");
     }
 
-    // 2. جلب بيانات الطفل وولي الأمر والملف الصحي (تم تصحيح c.uid)
+    // 2. جلب بيانات الطفل وولي الأمر والملف الصحي
     $stmtInfo = $conn->prepare("
         SELECT 
             c.full_name AS child_name, c.uid, c.birth_date, c.gender,
@@ -41,7 +42,7 @@ try {
         throw new Exception("لم يتم العثور على بيانات الطفل.");
     }
 
-    // 3. جلب نتائج الألعاب (أول لعبة vs المتوسط التراكمي)
+    // 3. جلب نتائج الألعاب
     $stmtScores = $conn->prepare("
         SELECT social_preference_score, created_at 
         FROM game_results 
@@ -80,7 +81,7 @@ try {
         $recommendation = "يوصى بعرض الطفل على أخصائي معتمد كأداة مساعدة في التقييم الكلينيكي.";
     }
 
-    // 4. إصدار التقرير
+    // 4. إعداد الملف والنسخة
     $stmtVer = $conn->prepare("SELECT COUNT(*) FROM diagnosis_reports WHERE child_id = :child_id");
     $stmtVer->execute([':child_id' => $child_id]);
     $count = $stmtVer->fetchColumn();
@@ -95,65 +96,89 @@ try {
 
     $fileName = $dir . "report_child_" . $child_id . "_" . time() . ".pdf";
 
-    // 5. إنشاء PDF واستخدام خط DejaVuSans من مجلد unifonts
-    $pdf = new tFPDF();
-    $pdf->AddPage();
-    $pdf->SetAutoPageBreak(true, 15);
+    // 5. ربط mPDF مع مجلد الخط اليدوي (fonts/Amiri-Regular.ttf)
+    $defaultConfig = (new \Mpdf\Config\ConfigVariables())->getDefaults();
+    $fontDirs = $defaultConfig['fontDir'];
 
-    // إضافة وتعريف خط DejaVuSans الذي يدعم العربية
-    $pdf->AddFont('DejaVu', '', 'DejaVuSans.ttf', true);
-    $pdf->AddFont('DejaVu', 'B', 'DejaVuSans-Bold.ttf', true);
+    $defaultFontConfig = (new \Mpdf\Config\FontVariables())->getDefaults();
+    $fontData = $defaultFontConfig['fontdata'];
 
-    // الهيدر
-    $pdf->SetFont('DejaVu', 'B', 16);
-    $pdf->Cell(0, 10, 'منصة بصيرة - تقرير التقييم البصري والنمائي', 0, 1, 'C');
-    $pdf->SetFont('DejaVu', '', 10);
-    $pdf->Cell(0, 6, 'تاريخ الإصدار: ' . date('Y-m-d') . ' | الإصدار: ' . $version, 0, 1, 'C');
-    $pdf->Ln(5);
+    $mpdf = new \Mpdf\Mpdf([
+        'mode' => 'utf-8',
+        'format' => 'A4',
+        'fontDir' => array_merge($fontDirs, [
+            __DIR__ . '/fonts', // مسار مجلد الخط الذي رفعته يدوياً
+        ]),
+        'fontdata' => $fontData + [
+            'amiri' => [
+                'R' => 'Amiri-Regular.ttf', // اسم الملف اليدوي داخل مجلد fonts
+                'useOTL' => 0xFF,
+                'useKashida' => 75,
+            ]
+        ],
+        'default_font' => 'amiri',
+        'margin_left' => 15,
+        'margin_right' => 15,
+        'margin_top' => 15,
+        'margin_bottom' => 15,
+    ]);
 
-    // 1. معلومات الطفل
-    $pdf->SetFont('DejaVu', 'B', 12);
-    $pdf->Cell(0, 8, '1. معلومات الطفل', 0, 1, 'R');
-    $pdf->SetFont('DejaVu', '', 10);
-    $pdf->Cell(95, 8, 'الاسم: ' . ($info['child_name'] ?? '-'), 1, 0, 'R');
-    $pdf->Cell(95, 8, 'المعرف UID: ' . ($info['uid'] ?? '-'), 1, 1, 'R');
-    $pdf->Cell(95, 8, 'تاريخ الميلاد: ' . ($info['birth_date'] ?? '-'), 1, 0, 'R');
-    $pdf->Cell(95, 8, 'فصيلة الدم: ' . ($info['blood_type'] ?? 'غير محددة'), 1, 1, 'R');
-    $pdf->Ln(5);
+    // محتوى التقرير بصيغة HTML
+    $html = '
+    <div dir="rtl" style="font-family: amiri; text-align: right; color: #333;">
+        <h2 style="text-align: center; margin-bottom: 5px;">منصة بصيرة - تقرير التقييم البصري والنمائي</h2>
+        <p style="text-align: center; font-size: 12px; color: #666; margin-top: 0;">
+            تاريخ الإصدار: ' . date('Y-m-d') . ' | الإصدار: ' . $version . '
+        </p>
+        <hr style="border: 0.5px solid #ccc; margin-bottom: 15px;">
 
-    // 2. معلومات ولي الأمر
-    $pdf->SetFont('DejaVu', 'B', 12);
-    $pdf->Cell(0, 8, '2. معلومات ولي الأمر', 0, 1, 'R');
-    $pdf->SetFont('DejaVu', '', 10);
-    $pdf->Cell(95, 8, 'ولي الأمر: ' . ($info['parent_name'] ?? '-'), 1, 0, 'R');
-    $pdf->Cell(95, 8, 'الهاتف: ' . ($info['parent_phone'] ?? '-'), 1, 1, 'R');
-    $pdf->Cell(95, 8, 'البريد الإلكتروني: ' . ($info['parent_email'] ?? '-'), 1, 0, 'R');
-    $pdf->Cell(95, 8, 'العنوان: ' . ($info['parent_address'] ?? '-'), 1, 1, 'R');
-    $pdf->Ln(5);
+        <h3 style="color: #2c3e50; font-size: 14px; margin-bottom: 5px;">1. معلومات الطفل</h3>
+        <table width="100%" cellpadding="6" cellspacing="0" border="1" style="border-collapse: collapse; font-size: 12px; border-color: #ddd;">
+            <tr>
+                <td width="50%"><strong>الاسم:</strong> ' . htmlspecialchars($info['child_name'] ?? '-') . '</td>
+                <td width="50%"><strong>المعرف UID:</strong> ' . htmlspecialchars($info['uid'] ?? '-') . '</td>
+            </tr>
+            <tr>
+                <td><strong>تاريخ الميلاد:</strong> ' . htmlspecialchars($info['birth_date'] ?? '-') . '</td>
+                <td><strong>فصيلة الدم:</strong> ' . htmlspecialchars($info['blood_type'] ?? 'غير محددة') . '</td>
+            </tr>
+        </table>
 
-    // 3. نتائج التقييم
-    $pdf->SetFont('DejaVu', 'B', 12);
-    $pdf->Cell(0, 8, '3. نتائج التقييم (' . $evaluationType . ')', 0, 1, 'R');
-    $pdf->SetFont('DejaVu', '', 10);
-    $pdf->Cell(95, 8, 'النتيجة: ' . $finalScore . '%', 1, 0, 'R');
-    $pdf->Cell(95, 8, 'الحالة: ' . $statusText, 1, 1, 'R');
-    $pdf->Ln(5);
+        <h3 style="color: #2c3e50; font-size: 14px; margin-top: 15px; margin-bottom: 5px;">2. معلومات ولي الأمر</h3>
+        <table width="100%" cellpadding="6" cellspacing="0" border="1" style="border-collapse: collapse; font-size: 12px; border-color: #ddd;">
+            <tr>
+                <td width="50%"><strong>ولي الأمر:</strong> ' . htmlspecialchars($info['parent_name'] ?? '-') . '</td>
+                <td width="50%"><strong>الهاتف:</strong> ' . htmlspecialchars($info['parent_phone'] ?? '-') . '</td>
+            </tr>
+            <tr>
+                <td><strong>البريد الإلكتروني:</strong> ' . htmlspecialchars($info['parent_email'] ?? '-') . '</td>
+                <td><strong>العنوان:</strong> ' . htmlspecialchars($info['parent_address'] ?? '-') . '</td>
+            </tr>
+        </table>
 
-    // 4. الملاحظات والتوصيات
-    $pdf->SetFont('DejaVu', 'B', 12);
-    $pdf->Cell(0, 8, '4. الملاحظات الطبية والتوصيات', 0, 1, 'R');
-    $pdf->SetFont('DejaVu', '', 10);
-    $pdf->MultiCell(0, 7, 'الحساسية: ' . ($info['allergies'] ?: 'لا يوجد'), 1, 'R');
-    $pdf->MultiCell(0, 7, 'الحالة المسجلة: ' . $conditionText, 1, 'R');
-    $pdf->MultiCell(0, 7, 'التوصية: ' . $recommendation, 1, 'R');
-    $pdf->Ln(8);
+        <h3 style="color: #2c3e50; font-size: 14px; margin-top: 15px; margin-bottom: 5px;">3. نتائج التقييم (' . htmlspecialchars($evaluationType) . ')</h3>
+        <table width="100%" cellpadding="6" cellspacing="0" border="1" style="border-collapse: collapse; font-size: 12px; border-color: #ddd;">
+            <tr>
+                <td width="50%"><strong>النتيجة:</strong> ' . $finalScore . '%</td>
+                <td width="50%"><strong>الحالة:</strong> ' . htmlspecialchars($statusText) . '</td>
+            </tr>
+        </table>
 
-    // إخلاء المسؤولية
-    $pdf->SetFont('DejaVu', '', 8);
-    $pdf->MultiCell(0, 5, 'ملاحظة: تم إنشاء هذا التقرير تلقائياً بناءً على تحليل حركة العين والتثبيت البصري أثناء ألعاب المنصة. يرجى استخدام هذه النتائج كأداة مساعدة للتقييم الإكلينيكي لدى المختصين.', 0, 'R');
+        <h3 style="color: #2c3e50; font-size: 14px; margin-top: 15px; margin-bottom: 5px;">4. الملاحظات الطبية والتوصيات</h3>
+        <div style="border: 1px solid #ddd; padding: 8px; font-size: 12px; line-height: 1.6;">
+            <p style="margin: 3px 0;"><strong>الحساسية:</strong> ' . htmlspecialchars($info['allergies'] ?: 'لا يوجد') . '</p>
+            <p style="margin: 3px 0;"><strong>الحالة المسجلة:</strong> ' . htmlspecialchars($conditionText) . '</p>
+            <p style="margin: 3px 0;"><strong>التوصية:</strong> ' . htmlspecialchars($recommendation) . '</p>
+        </div>
 
-    // حفظ الملف
-    $pdf->Output('F', $fileName);
+        <p style="font-size: 9px; color: #777; margin-top: 25px; line-height: 1.4;">
+            ملاحظة: تم إنشاء هذا التقرير تلقائياً بناءً على تحليل حركة العين والتثبيت البصري أثناء ألعاب المنصة. يرجى استخدام هذه النتائج كأداة مساعدة للتقييم الإكلينيكي لدى المختصين.
+        </p>
+    </div>
+    ';
+
+    $mpdf->WriteHTML($html);
+    $mpdf->Output($fileName, 'F');
 
     // 6. حفظ السجل في قاعدة البيانات
     $stmtInsert = $conn->prepare("
