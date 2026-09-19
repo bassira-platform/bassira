@@ -26,7 +26,7 @@ try {
     // 1. جلب بيانات الطفل وولي الأمر والملف الصحي
     $stmtInfo = $conn->prepare("
         SELECT 
-            c.full_name AS child_name, c.uid_code, c.birth_date, c.gender,
+            c.full_name AS child_name, c.uid, c.birth_date, c.gender,
             hr.blood_type, hr.allergies, hr.medical_conditions,
             u.full_name AS parent_name, u.email AS parent_email, u.phone AS parent_phone, u.address AS parent_address
         FROM children c
