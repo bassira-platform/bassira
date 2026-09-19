@@ -112,8 +112,8 @@ try {
         'fontdata' => $fontData + [
             'amiri' => [
                 'R' => 'Amiri-Regular.ttf', // اسم الملف اليدوي داخل مجلد fonts
-                'useOTL' => 0xFF,
-                'useKashida' => 75,
+                'useOTL' => 0,
+                'useKashida' =>0,
             ]
         ],
         'default_font' => 'amiri',
