@@ -245,21 +245,28 @@ async function startGameEngine() {
     game = new Phaser.Game(config);
 }
 
-async function onGameComplete(cId) {
-    const formData = new FormData();
-    formData.append('child_id', cId);
+async function onGameComplete() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const childId = urlParams.get('child_id');
 
     try {
-        const res = await fetch('generate_report_pdf.php', {
+        const formData = new FormData();
+        formData.append('child_id', childId);
+
+        const response = await fetch('generate_report_pdf.php', {
             method: 'POST',
             body: formData
         });
-        const result = await res.json();
-        if (result.status === 'success') {
-            console.log(`✅ تم توليد التقرير بنجاح: ${result.version}`);
+
+        const data = await response.json();
+
+        if (data.status === 'success') {
+            console.log('تم إنشاء التقرير:', data.file_path);
+        } else {
+            console.error('خطأ في توليد التقرير:', data.message);
         }
-    } catch (err) {
-        console.error('فشل في توليد إصدار التقرير:', err);
+    } catch (error) {
+        console.error('فشل في توليد إصدار التقرير:', error);
     }
 }
 </script>

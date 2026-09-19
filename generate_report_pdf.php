@@ -1,15 +1,23 @@
 <?php
+// إظهار الأخطاء إذا لزم الأمر للتتبع
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 
-// 1. تحديد مسار مجلد الخطوط بوضوح
+// 1. تحديد مسار الخطوط بوضوح
 define('FPDF_FONTPATH', __DIR__ . '/tfpdf/font/unifont/');
 
-// 2. استدعاء مكتبة tFPDF
-require_once('tfpdf/tfpdf.php');
+// 2. التحقق من وجود مكتبة tFPDF لتجنب Fatal Error
+$tfpdfPath = __DIR__ . '/tfpdf/tfpdf.php';
+if (!file_exists($tfpdfPath)) {
+    http_response_code(500);
+    echo json_encode(["status" => "error", "message" => "تعذر العثور على ملف tfpdf.php في المسار المحدّد."]);
+    exit;
+}
+
+require_once($tfpdfPath);
 
 $host = "sql213.infinityfree.com";
 $db_name = "if0_42720560_bassira";
@@ -20,13 +28,23 @@ try {
     $conn = new PDO("mysql:host=" . $host . ";dbname=" . $db_name . ";charset=utf8mb4", $username, $password);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    $child_id = isset($_POST['child_id']) ? intval($_POST['child_id']) : (isset($_GET['child_id']) ? intval($_GET['child_id']) : 0);
+    // 3. قراءة child_id بجميع الصيغ الممكنة (POST / GET / JSON Body)
+    $rawInput = json_decode(file_get_contents('php://input'), true);
+    $child_id = 0;
+
+    if (isset($_POST['child_id'])) {
+        $child_id = intval($_POST['child_id']);
+    } elseif (isset($_GET['child_id'])) {
+        $child_id = intval($_GET['child_id']);
+    } elseif (isset($rawInput['child_id'])) {
+        $child_id = intval($rawInput['child_id']);
+    }
     
     if ($child_id <= 0) {
         throw new Exception("لم يتم استلام معرف الطفل بشكل صحيح.");
     }
 
-    // جلب بيانات الطفل وولي الأمر والملف الصحي (استخدام c.uid بدلاً من c.uid_code)
+    // 4. جلب بيانات الطفل وولي الأمر والملف الصحي (تم تصحيح c.uid)
     $stmtInfo = $conn->prepare("
         SELECT 
             c.full_name AS child_name, c.uid, c.birth_date, c.gender,
@@ -44,7 +62,7 @@ try {
         throw new Exception("لم يتم العثور على بيانات الطفل.");
     }
 
-    // جلب نتائج الألعاب
+    // 5. جلب نتائج الألعاب
     $stmtScores = $conn->prepare("
         SELECT social_preference_score, created_at 
         FROM game_results 
@@ -82,7 +100,7 @@ try {
         $recommendation = "يوصى بعرض الطفل على أخصائي معتمد كأداة مساعدة في التقييم الكلينيكي.";
     }
 
-    // تحديد الإصدار
+    // 6. تحديد الإصدار ومجلد الحفظ
     $stmtVer = $conn->prepare("SELECT COUNT(*) FROM diagnosis_reports WHERE child_id = :child_id");
     $stmtVer->execute([':child_id' => $child_id]);
     $count = $stmtVer->fetchColumn();
@@ -97,17 +115,21 @@ try {
 
     $fileName = $dir . "report_child_" . $child_id . "_" . time() . ".pdf";
 
-    // إنشاء كائن PDF
+    // 7. إنشاء PDF وإضافة الخط الداعم للعربية
     $pdf = new tFPDF();
     $pdf->AddPage();
     $pdf->SetAutoPageBreak(true, 15);
 
-    // إضافة خط DejaVuSans الداعم للعربية من مجلد unifont
-    $pdf->AddFont('DejaVu', '', 'DejaVuSans.ttf', true);
-    $pdf->AddFont('DejaVu', 'B', 'DejaVuSans-Bold.ttf', true);
+    $fontFile = __DIR__ . '/tfpdf/font/unifont/DejaVuSans.ttf';
+    if (file_exists($fontFile)) {
+        $pdf->AddFont('DejaVu', '', 'DejaVuSans.ttf', true);
+        $pdf->AddFont('DejaVu', 'B', 'DejaVuSans-Bold.ttf', true);
+        $pdf->SetFont('DejaVu', 'B', 16);
+    } else {
+        $pdf->SetFont('Arial', 'B', 16);
+    }
 
     // الهيدر
-    $pdf->SetFont('DejaVu', 'B', 16);
     $pdf->Cell(0, 10, 'منصة بصيرة - تقرير التقييم البصري والنمائي', 0, 1, 'C');
     $pdf->SetFont('DejaVu', '', 10);
     $pdf->Cell(0, 6, 'تاريخ الإصدار: ' . date('Y-m-d') . ' | الإصدار: ' . $version, 0, 1, 'C');
@@ -157,7 +179,7 @@ try {
     // حفظ الملف
     $pdf->Output('F', $fileName);
 
-    // حفظ السجل في الداتابيز
+    // 8. حفظ السجل في قاعدة البيانات
     $stmtInsert = $conn->prepare("
         INSERT INTO diagnosis_reports (child_id, file_title, file_path, version, moyenne_score, created_at)
         VALUES (:child_id, :file_title, :file_path, :version, :moyenne_score, NOW())
