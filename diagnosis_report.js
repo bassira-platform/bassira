@@ -1,4 +1,4 @@
-// متغيرات عامة لمنع التكرار
+// متغير عام لمنع التكرار
 let currentChildReports = [];
 
 /**
@@ -20,6 +20,10 @@ async function openReportModal(childId) {
     iframe.src = '';
 
     try {
+        // أولاً: التأكد من توليد/تحديث التقرير بناءً على الجلسات الحالية
+        await fetch(`generate_report_pdf_2.php?child_id=${childId}`);
+
+        // ثانياً: جلب جميع التقارير الخاصة بالطفل
         const response = await fetch(`get_child_report.php?child_id=${childId}`);
         const data = await response.json();
 
@@ -42,11 +46,11 @@ async function openReportModal(childId) {
                 versionSelect.appendChild(opt);
             });
 
-            // عرض التقرير الأحدث في عارض الـ iframe
+            // عرض التقرير الأحدث في الـ iframe
             const latestFilePath = currentChildReports[0].file_path;
             iframe.src = latestFilePath;
 
-            // ضبط رابط تحميل الأرشيف ZIP
+            // ضبط زر تحميل ZIP
             if (btnZip) {
                 btnZip.onclick = () => downloadAllReportsZip(childId);
             }
