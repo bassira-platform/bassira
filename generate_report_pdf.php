@@ -112,9 +112,13 @@ try {
         'fontdata' => $fontData + [
             'tajawal' => [
                 'R' => 'Tajawal-Regular.ttf', // اسم الملف اليدوي داخل مجلد fonts
+                'useOTL' => 0x00,     //otl إعادة تعطيل 
+               
             ]
         ],
         'default_font' => 'tajawal',
+        'autoScriptToLang' => true, // تفعيل التحديد التلقائي للغة العربية
+        'autoLangToFont' => true,   // تحويل الخط تلقائياً وفقاً للغة
         'margin_left' => 15,
         'margin_right' => 15,
         'margin_top' => 15,
@@ -123,7 +127,7 @@ try {
 
     // محتوى التقرير بصيغة HTML
     $html = '
-    <div dir="rtl" style="font-family: amiri; text-align: right; color: #333;">
+    <div dir="rtl" style="font-family: tajawal; text-align: right; direction: rtl; unicode-bidi: embed;">
         <h2 style="text-align: center; margin-bottom: 5px;">منصة بصيرة - تقرير التقييم البصري والنمائي</h2>
         <p style="text-align: center; font-size: 12px; color: #666; margin-top: 0;">
             تاريخ الإصدار: ' . date('Y-m-d') . ' | الإصدار: ' . $version . '
