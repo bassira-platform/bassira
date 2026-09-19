@@ -199,25 +199,38 @@ async function finishGame() {
     }
 }
 
-async function onGameComplete(cId) {
-    const formData = new FormData();
-    formData.append('child_id', cId);
+async function onGameComplete() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const childId = urlParams.get('child_id') || 6;
 
     try {
-        const res = await fetch('generate_report_pdf.php', {
+        const formData = new FormData();
+        formData.append('child_id', childId);
+
+        const response = await fetch('generate_report_pdf.php', {
             method: 'POST',
             body: formData
         });
 
-        const result = await res.json();
+        // قراءة الاستجابة كنص أولاً لمنع انهيار unexpected end of JSON
+        const rawText = await response.text();
         
-        if (res.ok && result.status === 'success') {
-            console.log(`✅ تم توليد التقرير بنجاح: ${result.version}`);
-        } else {
-            console.error(`❌ خطأ من الخادم: ${result.message}`);
+        let data;
+        try {
+            data = JSON.parse(rawText);
+        } catch (e) {
+            console.error('الاستجابة القادمة من السيرفر ليست JSON:', rawText);
+            return;
         }
-    } catch (err) {
-        console.error('فشل في التوافق مع التقرير:', err);
+
+        if (data.status === 'success') {
+            console.log('✅ تم إنشاء التقرير:', data.file_path);
+        } else {
+            console.error('❌ خطأ من السيرفر:', data.message);
+        }
+
+    } catch (error) {
+        console.error('فشل في الطلب:', error);
     }
 }
 </script>
