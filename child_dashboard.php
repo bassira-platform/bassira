@@ -153,13 +153,13 @@ if (isset($_GET['logout'])) {
         <h2 class="section-title">مركز الألعاب والتحديات 🎮</h2>
         <div class="games-grid">
             
-            <!-- اللعبة الأولى: حديقة الاوان (التتبع الاستكشافي) -->
+            <!-- اللعبة الأولى: حديقة الالوان (التتبع الاستكشافي) -->
             <div class="game-card">
                 <div class="game-banner game-1-bg">
                     <span style="font-size: 40px;">🐿️</span>
                 </div>
                 <div class="game-body">
-                    <h3>حديقة الشكال والالوان</h3>
+                    <h3>حديقة الاشكال والالوان</h3>
                     <p>تتبع البلونات بعينيك وفرقعها بيديك </p>
                     <a href="game2.html?child_id=<?php echo $_SESSION['child_id']; ?>" class="play-btn">ابدأ اللعب الآن 🚀</a>
                 </div>
