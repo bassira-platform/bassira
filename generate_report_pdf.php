@@ -5,8 +5,11 @@ error_reporting(E_ALL);
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 
-// استدعاء مكتبة FPDF
-require_once('fpdf/fpdf.php');
+// 1. تحديد مسار مجلد الخطوط بوضوح
+define('FPDF_FONTPATH', __DIR__ . '/tfpdf/font/unifont/');
+
+// 2. استدعاء مكتبة tFPDF
+require_once('tfpdf/tfpdf.php');
 
 $host = "sql213.infinityfree.com";
 $db_name = "if0_42720560_bassira";
@@ -23,7 +26,7 @@ try {
         throw new Exception("لم يتم استلام معرف الطفل بشكل صحيح.");
     }
 
-    // 1. جلب بيانات الطفل وولي الأمر والملف الصحي
+    // جلب بيانات الطفل وولي الأمر والملف الصحي (استخدام c.uid بدلاً من c.uid_code)
     $stmtInfo = $conn->prepare("
         SELECT 
             c.full_name AS child_name, c.uid, c.birth_date, c.gender,
@@ -41,7 +44,7 @@ try {
         throw new Exception("لم يتم العثور على بيانات الطفل.");
     }
 
-    // 2. جلب نتائج الألعاب لتطبيق المنطق (أول مرة vs المتوسط التراكمي)
+    // جلب نتائج الألعاب
     $stmtScores = $conn->prepare("
         SELECT social_preference_score, created_at 
         FROM game_results 
@@ -58,11 +61,9 @@ try {
     if ($totalGames === 0) {
         throw new Exception("لا توجد نتائج ألعاب مسجلة لهذا الطفل بعد.");
     } elseif ($totalGames === 1) {
-        // لعب لأول مرة -> اعتماد النتيجة الأولى مباشرة
         $finalScore = round(floatval($results[0]['social_preference_score']) * 100, 2);
         $evaluationType = "تقييم تشخيصي مبدئي (اللعبة الأولى)";
     } else {
-        // لعب أكثر من مرة -> حساب المتوسط التراكمي
         $total = 0;
         foreach ($results as $r) {
             $total += floatval($r['social_preference_score']);
@@ -71,7 +72,6 @@ try {
         $evaluationType = "تقييم تراكمي (متوسط " . $totalGames . " جلسات)";
     }
 
-    // تحديد حالة الخطر والتوصية بناءً على الدرجة
     if ($finalScore >= 70) {
         $statusText = "طبيعي (خطر منخفض)";
         $conditionText = "استجابة بصرية وتثبيت طبيعي عبر الاختبارات";
@@ -82,7 +82,7 @@ try {
         $recommendation = "يوصى بعرض الطفل على أخصائي معتمد كأداة مساعدة في التقييم الكلينيكي.";
     }
 
-    // 3. تحديد إصدار التقرير
+    // تحديد الإصدار
     $stmtVer = $conn->prepare("SELECT COUNT(*) FROM diagnosis_reports WHERE child_id = :child_id");
     $stmtVer->execute([':child_id' => $child_id]);
     $count = $stmtVer->fetchColumn();
@@ -97,63 +97,67 @@ try {
 
     $fileName = $dir . "report_child_" . $child_id . "_" . time() . ".pdf";
 
-    // 4. إنشاء ملف PDF بأسلوب منظم
-    $pdf = new FPDF();
+    // إنشاء كائن PDF
+    $pdf = new tFPDF();
     $pdf->AddPage();
     $pdf->SetAutoPageBreak(true, 15);
 
+    // إضافة خط DejaVuSans الداعم للعربية من مجلد unifont
+    $pdf->AddFont('DejaVu', '', 'DejaVuSans.ttf', true);
+    $pdf->AddFont('DejaVu', 'B', 'DejaVuSans-Bold.ttf', true);
+
     // الهيدر
-    $pdf->SetFont('Arial', 'B', 18);
-    $pdf->Cell(0, 10, 'Bassira - Visual & Developmental Report', 0, 1, 'C');
-    $pdf->SetFont('Arial', '', 10);
-    $pdf->Cell(0, 6, 'Date: ' . date('Y-m-d') . ' | Version: ' . $version, 0, 1, 'C');
+    $pdf->SetFont('DejaVu', 'B', 16);
+    $pdf->Cell(0, 10, 'منصة بصيرة - تقرير التقييم البصري والنمائي', 0, 1, 'C');
+    $pdf->SetFont('DejaVu', '', 10);
+    $pdf->Cell(0, 6, 'تاريخ الإصدار: ' . date('Y-m-d') . ' | الإصدار: ' . $version, 0, 1, 'C');
     $pdf->Ln(5);
 
-    // بيانات الطفل
-    $pdf->SetFont('Arial', 'B', 12);
-    $pdf->Cell(0, 8, '1. Child Information', 0, 1, 'L');
-    $pdf->SetFont('Arial', '', 10);
-    $pdf->Cell(95, 6, 'Name: ' . ($info['child_name'] ?? '-'), 1);
-    $pdf->Cell(95, 6, 'UID: ' . ($info['uid_code'] ?? '-'), 1, 1);
-    $pdf->Cell(95, 6, 'Birth Date: ' . ($info['birth_date'] ?? '-'), 1);
-    $pdf->Cell(95, 6, 'Blood Type: ' . ($info['blood_type'] ?? 'Unspecified'), 1, 1);
+    // 1. معلومات الطفل
+    $pdf->SetFont('DejaVu', 'B', 12);
+    $pdf->Cell(0, 8, '1. معلومات الطفل', 0, 1, 'R');
+    $pdf->SetFont('DejaVu', '', 10);
+    $pdf->Cell(95, 8, 'الاسم: ' . ($info['child_name'] ?? '-'), 1, 0, 'R');
+    $pdf->Cell(95, 8, 'المعرف UID: ' . ($info['uid'] ?? '-'), 1, 1, 'R');
+    $pdf->Cell(95, 8, 'تاريخ الميلاد: ' . ($info['birth_date'] ?? '-'), 1, 0, 'R');
+    $pdf->Cell(95, 8, 'فصيلة الدم: ' . ($info['blood_type'] ?? 'غير محددة'), 1, 1, 'R');
     $pdf->Ln(5);
 
-    // بيانات ولي الأمر
-    $pdf->SetFont('Arial', 'B', 12);
-    $pdf->Cell(0, 8, '2. Parent Information', 0, 1, 'L');
-    $pdf->SetFont('Arial', '', 10);
-    $pdf->Cell(95, 6, 'Parent Name: ' . ($info['parent_name'] ?? '-'), 1);
-    $pdf->Cell(95, 6, 'Phone: ' . ($info['parent_phone'] ?? '-'), 1, 1);
-    $pdf->Cell(95, 6, 'Email: ' . ($info['parent_email'] ?? '-'), 1);
-    $pdf->Cell(95, 6, 'Address: ' . ($info['parent_address'] ?? '-'), 1, 1);
+    // 2. معلومات ولي الأمر
+    $pdf->SetFont('DejaVu', 'B', 12);
+    $pdf->Cell(0, 8, '2. معلومات ولي الأمر', 0, 1, 'R');
+    $pdf->SetFont('DejaVu', '', 10);
+    $pdf->Cell(95, 8, 'ولي الأمر: ' . ($info['parent_name'] ?? '-'), 1, 0, 'R');
+    $pdf->Cell(95, 8, 'الهاتف: ' . ($info['parent_phone'] ?? '-'), 1, 1, 'R');
+    $pdf->Cell(95, 8, 'البريد الإلكتروني: ' . ($info['parent_email'] ?? '-'), 1, 0, 'R');
+    $pdf->Cell(95, 8, 'العنوان: ' . ($info['parent_address'] ?? '-'), 1, 1, 'R');
     $pdf->Ln(5);
 
-    // نتيجة التقييم
-    $pdf->SetFont('Arial', 'B', 12);
-    $pdf->Cell(0, 8, '3. Evaluation Results (' . $evaluationType . ')', 0, 1, 'L');
-    $pdf->SetFont('Arial', '', 10);
-    $pdf->Cell(95, 6, 'Score: ' . $finalScore . '%', 1);
-    $pdf->Cell(95, 6, 'Status: ' . $statusText, 1, 1);
+    // 3. نتائج التقييم
+    $pdf->SetFont('DejaVu', 'B', 12);
+    $pdf->Cell(0, 8, '3. نتائج التقييم (' . $evaluationType . ')', 0, 1, 'R');
+    $pdf->SetFont('DejaVu', '', 10);
+    $pdf->Cell(95, 8, 'النتيجة: ' . $finalScore . '%', 1, 0, 'R');
+    $pdf->Cell(95, 8, 'الحالة: ' . $statusText, 1, 1, 'R');
     $pdf->Ln(5);
 
-    // السجل الطبي والتوصيات
-    $pdf->SetFont('Arial', 'B', 12);
-    $pdf->Cell(0, 8, '4. Medical Notes & Recommendation', 0, 1, 'L');
-    $pdf->SetFont('Arial', '', 10);
-    $pdf->MultiCell(0, 6, 'Allergies: ' . ($info['allergies'] ?: 'None'), 1);
-    $pdf->MultiCell(0, 6, 'Recorded Conditions: ' . $conditionText, 1);
-    $pdf->MultiCell(0, 6, 'Recommendation: ' . $recommendation, 1);
+    // 4. الملاحظات والتوصيات
+    $pdf->SetFont('DejaVu', 'B', 12);
+    $pdf->Cell(0, 8, '4. الملاحظات الطبية والتوصيات', 0, 1, 'R');
+    $pdf->SetFont('DejaVu', '', 10);
+    $pdf->MultiCell(0, 7, 'الحساسية: ' . ($info['allergies'] ?: 'لا يوجد'), 1, 'R');
+    $pdf->MultiCell(0, 7, 'الحالة المسجلة: ' . $conditionText, 1, 'R');
+    $pdf->MultiCell(0, 7, 'التوصية: ' . $recommendation, 1, 'R');
     $pdf->Ln(8);
 
     // إخلاء المسؤولية
-    $pdf->SetFont('Arial', 'I', 8);
-    $pdf->MultiCell(0, 4, 'Note: This report was generated automatically based on eye-tracking and visual fixation analysis during platform games. Please use these results as a supporting tool for clinical evaluation.');
+    $pdf->SetFont('DejaVu', '', 8);
+    $pdf->MultiCell(0, 5, 'ملاحظة: تم إنشاء هذا التقرير تلقائياً بناءً على تحليل حركة العين والتثبيت البصري أثناء ألعاب المنصة. يرجى استخدام هذه النتائج كأداة مساعدة للتقييم الإكلينيكي لدى المختصين.', 0, 'R');
 
     // حفظ الملف
     $pdf->Output('F', $fileName);
 
-    // 5. حفظ السجل في قاعدة البيانات
+    // حفظ السجل في الداتابيز
     $stmtInsert = $conn->prepare("
         INSERT INTO diagnosis_reports (child_id, file_title, file_path, version, moyenne_score, created_at)
         VALUES (:child_id, :file_title, :file_path, :version, :moyenne_score, NOW())
