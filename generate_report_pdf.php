@@ -110,13 +110,11 @@ try {
             __DIR__ . '/fonts', // مسار مجلد الخط الذي رفعته يدوياً
         ]),
         'fontdata' => $fontData + [
-            'amiri' => [
-                'R' => 'Amiri-Regular.ttf', // اسم الملف اليدوي داخل مجلد fonts
-                'useOTL' => 0,
-                'useKashida' =>0,
+            'tajawal' => [
+                'R' => 'Tajawal-Regular.ttf', // اسم الملف اليدوي داخل مجلد fonts
             ]
         ],
-        'default_font' => 'amiri',
+        'default_font' => 'tajawal',
         'margin_left' => 15,
         'margin_right' => 15,
         'margin_top' => 15,
