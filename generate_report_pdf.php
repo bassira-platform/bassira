@@ -23,6 +23,23 @@ try {
 
     $conn = new PDO("mysql:host=" . $host . ";dbname=" . $db_name . ";charset=utf8mb4", $username, $password);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+// استلام child_id بكافة الطرق (POST, GET, JSON Body)
+    $rawInput = json_decode(file_get_contents('php://input'), true);
+    $child_id = 0;
+
+    if (!empty($_POST['child_id'])) {
+        $child_id = intval($_POST['child_id']);
+    } elseif (!empty($_GET['child_id'])) {
+        $child_id = intval($_GET['child_id']);
+    } elseif (!empty($rawInput['child_id'])) {
+        $child_id = intval($rawInput['child_id']);
+    }
+    
+    // اختبار سريع: إذا لم يصل المعرف، يمكن وضع قيمة افتراضية للاختبار فقط (مثلاً 6)
+    if ($child_id <= 0) {
+        // يمكنك إزالة هذا السطر الافتراضي بعد انتهاء التجربة
+        $child_id = 6; 
+    }
 
     // 3. استلام child_id بكافة الطرق الممكنة (POST / GET / JSON Body)
     $rawInput = json_decode(file_get_contents('php://input'), true);

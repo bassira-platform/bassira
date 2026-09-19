@@ -245,37 +245,37 @@ async function startGameEngine() {
     game = new Phaser.Game(config);
 }
 async function onGameComplete() {
+    // 1. استخراج child_id من URL
     const urlParams = new URLSearchParams(window.location.search);
-    const childId = urlParams.get('child_id') || 6;
+    let childId = urlParams.get('child_id');
+
+    // إذا لم يكن موجوداً في الرابط، نحاول جلب قيمة احتياطية من localStorage أو افتراضية
+    if (!childId || childId === 'null' || childId === 'undefined') {
+        childId = localStorage.getItem('selected_child_id') || '6';
+    }
+
+    console.log("إرسال طلب التقرير للطفل رقم:", childId);
 
     try {
         const formData = new FormData();
         formData.append('child_id', childId);
 
+        // إرسال POST Request مع FormData
         const response = await fetch('generate_report_pdf.php', {
             method: 'POST',
             body: formData
         });
 
-        // قراءة الاستجابة كنص أولاً لمنع انهيار unexpected end of JSON
-        const rawText = await response.text();
-        
-        let data;
-        try {
-            data = JSON.parse(rawText);
-        } catch (e) {
-            console.error('الاستجابة القادمة من السيرفر ليست JSON:', rawText);
-            return;
-        }
+        const data = await response.json();
 
         if (data.status === 'success') {
-            console.log('✅ تم إنشاء التقرير:', data.file_path);
+            console.log('✅ تم إنشاء التقرير بنجاح:', data.file_path);
         } else {
             console.error('❌ خطأ من السيرفر:', data.message);
         }
 
     } catch (error) {
-        console.error('فشل في الطلب:', error);
+        console.error('فشل في طلب توليد التقرير:', error);
     }
 }
 </script>
