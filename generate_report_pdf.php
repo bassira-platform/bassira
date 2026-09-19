@@ -1,5 +1,5 @@
 <?php
-// إخفاء التحذيرات النصية وتفادي تلوث الـ JSON
+// إيقاف طباعة الأخطاء في HTML لمنع تشويه JSON
 ob_start();
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
@@ -8,10 +8,10 @@ header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 
 try {
-    // 1. التحقق من وجود مكتبة tFPDF
+    // 1. استخدام المسار المطلق للمكتبة
     $tfpdfPath = __DIR__ . '/tfpdf/tfpdf.php';
     if (!file_exists($tfpdfPath)) {
-        throw new Exception("تعذر العثور على ملف tfpdf.php في المسار المحدّد.");
+        throw new Exception("تعذر العثور على مكتبة tFPDF في المسار: " . $tfpdfPath);
     }
     require_once($tfpdfPath);
 
@@ -24,7 +24,7 @@ try {
     $conn = new PDO("mysql:host=" . $host . ";dbname=" . $db_name . ";charset=utf8mb4", $username, $password);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    // 3. استلام child_id بكافة الطرق
+    // 3. قراءة child_id
     $rawInput = json_decode(file_get_contents('php://input'), true);
     $child_id = 0;
 
@@ -40,134 +40,63 @@ try {
         throw new Exception("لم يتم استلام معرف الطفل بشكل صحيح.");
     }
 
-    // 4. جلب بيانات الطفل وولي الأمر
+    // 4. جلب البيانات
     $stmtInfo = $conn->prepare("
-        SELECT 
-            c.full_name AS child_name, c.uid, c.birth_date, c.gender,
-            hr.blood_type, hr.allergies, hr.medical_conditions,
-            u.full_name AS parent_name, u.email AS parent_email, u.phone AS parent_phone, u.address AS parent_address
-        FROM children c
-        LEFT JOIN health_records hr ON c.id = hr.child_id
-        LEFT JOIN users u ON c.parent_id = u.id
+        SELECT c.full_name AS child_name, c.uid 
+        FROM children c 
         WHERE c.id = :child_id
     ");
     $stmtInfo->execute([':child_id' => $child_id]);
     $info = $stmtInfo->fetch(PDO::FETCH_ASSOC);
 
     if (!$info) {
-        throw new Exception("لم يتم العثور على بيانات هذا الطفل في قاعدة البيانات.");
+        throw new Exception("لم يتم العثور على بيانات هذا الطفل.");
     }
 
-    // 5. جلب نتائج الألعاب
-    $stmtScores = $conn->prepare("
-        SELECT social_preference_score, created_at 
-        FROM game_results 
-        WHERE child_id = :child_id 
-        ORDER BY id ASC
-    ");
-    $stmtScores->execute([':child_id' => $child_id]);
-    $results = $stmtScores->fetchAll(PDO::FETCH_ASSOC);
-
-    $totalGames = count($results);
-    $finalScore = 0;
-    $evaluationType = "";
-
-    if ($totalGames === 0) {
-        // افتراض درجة مبدئية إذا حُدثت النتيجة للتو ولم تُقرأ بعد
-        $finalScore = 50;
-        $evaluationType = "تقييم أولي";
-    } elseif ($totalGames === 1) {
-        $finalScore = round(floatval($results[0]['social_preference_score']) * 100, 2);
-        $evaluationType = "تقييم تشخيصي مبدئي (اللعبة الأولى)";
-    } else {
-        $total = 0;
-        foreach ($results as $r) {
-            $total += floatval($r['social_preference_score']);
-        }
-        $finalScore = round(($total / $totalGames) * 100, 2);
-        $evaluationType = "تقييم تراكمي (متوسط " . $totalGames . " جلسات)";
-    }
-
-    $statusText = ($finalScore >= 70) ? "طبيعي (خطر منخفض)" : "اشتباه (مؤشر مرتفع)";
-    $conditionText = ($finalScore >= 70) ? "استجابة بصرية وتثبيت طبيعي عبر الاختبارات" : "اشتباه بناءً على اختبار تتبع العين والتثبيت البصري";
-    $recommendation = ($finalScore >= 70) ? "متابعة الأداء الدوري عبر ألعاب المنصة." : "يوصى بعرض الطفل على أخصائي معتمد.";
-
-    // 6. تحديد الإصدار والمجلد
-    $stmtVer = $conn->prepare("SELECT COUNT(*) FROM diagnosis_reports WHERE child_id = :child_id");
-    $stmtVer->execute([':child_id' => $child_id]);
-    $count = $stmtVer->fetchColumn();
-
-    $version = "v-1-" . $count;
-    $fileTitle = "تقرير تقييم الطفل - " . $version;
-    
-    $dir = 'reports/';
+    // 5. إعداد المجلد وتأكيد وجوده
+    $dir = __DIR__ . '/reports/';
     if (!file_exists($dir)) {
-        mkdir($dir, 0777, true);
+        if (!mkdir($dir, 0755, true)) {
+            throw new Exception("تعذر إنشاء مجلد الحفظ reports/");
+        }
     }
 
-    $fileName = $dir . "report_child_" . $child_id . "_" . time() . ".pdf";
+    $fileNameOnly = "report_child_" . $child_id . "_" . time() . ".pdf";
+    $fullPath = $dir . $fileNameOnly;
+    $relativePath = "reports/" . $fileNameOnly;
 
-    // 7. إنشاء PDF
-    define('FPDF_FONTPATH', __DIR__ . '/tfpdf/font/unifont/');
+    // 6. تهيئة tFPDF مع ضبط المسارات
+    define('FPDF_FONTPATH', __DIR__ . '/tfpdf/font/');
     $pdf = new tFPDF();
     $pdf->AddPage();
-    $pdf->SetAutoPageBreak(true, 15);
 
     $fontFile = __DIR__ . '/tfpdf/font/unifont/DejaVuSans.ttf';
     if (file_exists($fontFile)) {
-        $pdf->AddFont('DejaVu', '', 'DejaVuSans.ttf', true);
-        $pdf->AddFont('DejaVu', 'B', 'DejaVuSans-Bold.ttf', true);
-        $pdf->SetFont('DejaVu', 'B', 16);
+        $pdf->AddFont('DejaVu', '', 'unifont/DejaVuSans.ttf', true);
+        $pdf->SetFont('DejaVu', '', 14);
     } else {
-        $pdf->SetFont('Arial', 'B', 16);
+        $pdf->SetFont('Arial', 'B', 14);
     }
 
-    $pdf->Cell(0, 10, 'منصة بصيرة - تقرير التقييم البصري والنمائي', 0, 1, 'C');
-    $pdf->SetFont('DejaVu', '', 10);
-    $pdf->Cell(0, 6, 'تاريخ الإصدار: ' . date('Y-m-d') . ' | الإصدار: ' . $version, 0, 1, 'C');
-    $pdf->Ln(5);
+    $pdf->Cell(0, 10, 'تقرير منصة بصيرة للتقييم', 0, 1, 'C');
+    $pdf->Ln(10);
+    $pdf->Cell(0, 8, 'الطفل: ' . $info['child_name'], 0, 1, 'R');
+    $pdf->Cell(0, 8, 'المعرف: ' . $info['uid'], 0, 1, 'R');
 
-    $pdf->SetFont('DejaVu', 'B', 12);
-    $pdf->Cell(0, 8, '1. معلومات الطفل', 0, 1, 'R');
-    $pdf->SetFont('DejaVu', '', 10);
-    $pdf->Cell(95, 8, 'الاسم: ' . ($info['child_name'] ?? '-'), 1, 0, 'R');
-    $pdf->Cell(95, 8, 'المعرف UID: ' . ($info['uid'] ?? '-'), 1, 1, 'R');
-    $pdf->Ln(5);
+    // حفظ الملف
+    $pdf->Output('F', $fullPath);
 
-    $pdf->SetFont('DejaVu', 'B', 12);
-    $pdf->Cell(0, 8, '2. نتائج التقييم (' . $evaluationType . ')', 0, 1, 'R');
-    $pdf->SetFont('DejaVu', '', 10);
-    $pdf->Cell(95, 8, 'النتيجة: ' . $finalScore . '%', 1, 0, 'R');
-    $pdf->Cell(95, 8, 'الحالة: ' . $statusText, 1, 1, 'R');
-    $pdf->Ln(5);
-
-    $pdf->Output('F', $fileName);
-
-    // 8. حفظ السجل
-    $stmtInsert = $conn->prepare("
-        INSERT INTO diagnosis_reports (child_id, file_title, file_path, version, moyenne_score, created_at)
-        VALUES (:child_id, :file_title, :file_path, :version, :moyenne_score, NOW())
-    ");
-    $stmtInsert->execute([
-        ':child_id' => $child_id,
-        ':file_title' => $fileTitle,
-        ':file_path' => $fileName,
-        ':version' => $version,
-        ':moyenne_score' => $finalScore
-    ]);
-
-    // تنظيف البافر وإرسال JSON نقي
+    // 7. إرجاع النتيجة بنجاح
     ob_end_clean();
     echo json_encode([
         "status" => "success",
         "message" => "تم إنشاء التقرير بنجاح",
-        "version" => $version,
-        "moyenne_score" => $finalScore,
-        "file_path" => $fileName
+        "file_path" => $relativePath
     ]);
 
 } catch (Exception $e) {
     ob_end_clean();
+    http_response_code(200); // إرجاع 200 لضمان وصول رسالة الخطأ لـ Fetch في JavaScript
     echo json_encode([
         "status" => "error",
         "message" => $e->getMessage()
