@@ -34,7 +34,7 @@
 <div id="phaser-game"></div>
 
 <script>
-let childId = new URLSearchParams(window.location.search).get('child_id') || 6;
+let childId = new URLSearchParams(window.location.search).get('child_id') ;
 let gazeTracker = { x: window.innerWidth / 2, y: window.innerHeight / 2, active: false };
 let gazeMetrics = {
     socialFixationMs: 0,
@@ -244,29 +244,42 @@ async function startGameEngine() {
     document.getElementById('ui-overlay').style.display = 'none';
     game = new Phaser.Game(config);
 }
-
 async function onGameComplete() {
+    // 1. استخراج child_id من رابط الصفحة الحالي (URL)
     const urlParams = new URLSearchParams(window.location.search);
     const childId = urlParams.get('child_id');
 
+    // التحقق من وجود المعرف قبل إرسال الطلب
+    if (!childId) {
+        console.error('خطأ: لم يتم العثور على child_id في رابط الصفحة.');
+        return;
+    }
+
     try {
+        // 2. تجهيز البيانات كـ FormData لضمان استلامها في PHP عبر $_POST['child_id']
         const formData = new FormData();
         formData.append('child_id', childId);
 
+        // 3. إرسال الطلب إلى ملف generate_report_pdf.php
         const response = await fetch('generate_report_pdf.php', {
             method: 'POST',
             body: formData
         });
 
+        // قراءة استجابة السيرفر كـ JSON
         const data = await response.json();
 
         if (data.status === 'success') {
-            console.log('تم إنشاء التقرير:', data.file_path);
+            console.log('تم إنشاء التقرير بنجاح! المسار:', data.file_path);
+            
+            // اختيارياً: فتح ملف الـ PDF في تبويب جديد فور الانتهاء
+            window.open(data.file_path, '_blank');
         } else {
-            console.error('خطأ في توليد التقرير:', data.message);
+            console.error('خطأ من السيرفر أثناء إنشاء التقرير:', data.message);
         }
+
     } catch (error) {
-        console.error('فشل في توليد إصدار التقرير:', error);
+        console.error('فشل في طلب توليد إصدار التقرير:', error);
     }
 }
 </script>
