@@ -25,6 +25,7 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function loadStage() {
+    // التأكد من التوقف فور انتهاء المراحل
     if (currentStage >= stages.length) {
         finishGame();
         return;
@@ -49,6 +50,9 @@ function loadStage() {
 }
 
 function selectAnswer(selected) {
+    // حماية: إذا انتهت المراحل لا تنفذ الشروط التالية
+    if (currentStage >= stages.length) return;
+
     const responseTime = (Date.now() - startTime) / 1000;
     const isCorrect = selected === stages[currentStage].target;
 

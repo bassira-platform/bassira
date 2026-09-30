@@ -1,4 +1,8 @@
 <?php
+// إظهار الأخطاء للتشخيص (مؤقتاً)
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 
@@ -11,7 +15,8 @@ try {
     $conn = new PDO("mysql:host=" . $host . ";dbname=" . $db_name . ";charset=utf8mb4", $username, $password);
     $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-    $input = json_decode(file_get_contents("php://input"), true);
+    $raw_input = file_get_contents("php://input");
+    $input = json_decode($raw_input, true);
 
     $child_id = isset($input['child_id']) ? intval($input['child_id']) : 0;
     $score = isset($input['score']) ? floatval($input['score']) : 0.0;
@@ -21,7 +26,6 @@ try {
         exit();
     }
 
-    // تخزين النتيجة مباشرة في الجدول التراكمي
     $stmt = $conn->prepare("
         INSERT INTO game_results (child_id, social_preference_score, created_at)
         VALUES (:child_id, :score, NOW())
