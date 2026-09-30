@@ -176,6 +176,16 @@ if (isset($_GET['logout'])) {
                     <a href="game.html?stage=SLD&child_id=<?php echo $_SESSION['child_id']; ?>" class="play-btn">ابدأ التحدي 🎯</a>
                 </div>
             </div>
+<div class="game-card">
+                <div class="game-banner game-1-bg">
+                    <span style="font-size: 40px;">🐿️</span>
+                </div>
+                <div class="game-body">
+                    <h3>لعبة الحروف</h3>
+                    <p>اسمع ورى الحرف وانطقه </p>
+                    <a href="game3.html?child_id=<?php echo $_SESSION['child_id']; ?>" class="play-btn">ابدأ اللعب الآن 🚀</a>
+                </div>
+            </div>
 
         </div>
     </div>
