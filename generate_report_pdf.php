@@ -48,12 +48,17 @@ try {
         throw new Exception("لم يتم العثور على بيانات الطفل.");
     }
 
-    // 3. جلب جميع نتائج الألعاب للطفل (شاملة game_id: 1, 3, 2)
+    // 3. جلب أحدث نتيجة مسجلة لكل لعبة من الألعاب الثلاث (game_id = 1, 2, 3)
     $stmtScores = $conn->prepare("
-        SELECT game_id, social_preference_score, created_at 
-        FROM game_results 
-        WHERE child_id = :child_id 
-        ORDER BY id ASC
+        SELECT gr.game_id, gr.social_preference_score, gr.created_at
+        FROM game_results gr
+        INNER JOIN (
+            SELECT game_id, MAX(id) AS max_id
+            FROM game_results
+            WHERE child_id = :child_id
+            GROUP BY game_id
+        ) latest ON gr.id = latest.max_id
+        ORDER BY gr.game_id ASC
     ");
     $stmtScores->execute([':child_id' => $child_id]);
     $results = $stmtScores->fetchAll(PDO::FETCH_ASSOC);
@@ -62,7 +67,7 @@ try {
     $finalScore = 0;
     $evaluationType = "";
 
-    // خريطة مسميات الألعاب حسب معرفاتها
+    // خريطة مسميات الألعاب
     $gameNames = [
         1 => "اللعبة الأولى (التتبع البصري)",
         3 => "اللعبة الثانية (التثبيت والتفاعل)",
@@ -83,7 +88,7 @@ try {
             $total += floatval($r['social_preference_score']);
         }
         $finalScore = round(($total / $totalGames) * 100, 2);
-        $evaluationType = "تقييم تراكمي (متوسط " . $totalGames . " جلسات ألعاب)";
+        $evaluationType = "تقييم تراكمي (متوسط " . $totalGames . " ألعاب مختلفة)";
     }
 
     // تحديد حالة التقييم
