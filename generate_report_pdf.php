@@ -5,9 +5,15 @@ error_reporting(E_ALL);
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 
-// 1. استدعاء ملف autoload الخاص بـ mPDF المرفوع يدوياً
-// قم بتعديل المسار 'mpdf/vendor/autoload.php' حسب اسم المجلد الذي رفعته
-require_once __DIR__ . '/mpdf/vendor/autoload.php';
+// 1. استدعاء مكتبة mPDF
+if (file_exists(__DIR__ . '/vendor/autoload.php')) {
+    require_once __DIR__ . '/vendor/autoload.php';
+} elseif (file_exists(__DIR__ . '/mpdf/vendor/autoload.php')) {
+    require_once __DIR__ . '/mpdf/vendor/autoload.php';
+} else {
+    echo json_encode(["status" => "error", "message" => "لم يتم العثور على مجلد vendor/autoload.php"]);
+    exit();
+}
 
 $host = "sql213.infinityfree.com";
 $db_name = "if0_42720560_bassira";
@@ -24,7 +30,7 @@ try {
         throw new Exception("لم يتم استلام معرف الطفل بشكل صحيح.");
     }
 
-    // 2. جلب بيانات الطفل وولي الأمر والملف الصحي
+    // 2. جلب بيانات الطفل وولي الأمر
     $stmtInfo = $conn->prepare("
         SELECT 
             c.full_name AS child_name, c.uid, c.birth_date, c.gender,
@@ -42,9 +48,9 @@ try {
         throw new Exception("لم يتم العثور على بيانات الطفل.");
     }
 
-    // 3. جلب نتائج الألعاب
+    // 3. جلب جميع نتائج الألعاب للطفل (شاملة game_id: 1, 3, 2)
     $stmtScores = $conn->prepare("
-        SELECT social_preference_score, created_at 
+        SELECT game_id, social_preference_score, created_at 
         FROM game_results 
         WHERE child_id = :child_id 
         ORDER BY id ASC
@@ -56,32 +62,42 @@ try {
     $finalScore = 0;
     $evaluationType = "";
 
+    // خريطة مسميات الألعاب حسب معرفاتها
+    $gameNames = [
+        1 => "اللعبة الأولى (التتبع البصري)",
+        3 => "اللعبة الثانية (التثبيت والتفاعل)",
+        2 => "اللعبة الثالثة (مغامرة الحروف)"
+    ];
+
     if ($totalGames === 0) {
         throw new Exception("لا توجد نتائج ألعاب مسجلة لهذا الطفل بعد.");
     } elseif ($totalGames === 1) {
+        $singleGameId = intval($results[0]['game_id']);
+        $gameLabel = isset($gameNames[$singleGameId]) ? $gameNames[$singleGameId] : "اللعبة " . $singleGameId;
+        
         $finalScore = round(floatval($results[0]['social_preference_score']) * 100, 2);
-        $evaluationType = "تقييم تشخيصي مبدئي (اللعبة الأولى)";
+        $evaluationType = "تقييم تشخيصي مبدئي (" . $gameLabel . ")";
     } else {
         $total = 0;
         foreach ($results as $r) {
             $total += floatval($r['social_preference_score']);
         }
         $finalScore = round(($total / $totalGames) * 100, 2);
-        $evaluationType = "تقييم تراكمي (متوسط " . $totalGames . " جلسات)";
+        $evaluationType = "تقييم تراكمي (متوسط " . $totalGames . " جلسات ألعاب)";
     }
 
-    // تحديد حالة الخطر
+    // تحديد حالة التقييم
     if ($finalScore >= 70) {
         $statusText = "طبيعي (خطر منخفض)";
-        $conditionText = "استجابة بصرية وتثبيت طبيعي عبر الاختبارات";
+        $conditionText = "استجابة بصرية ونمائية طبيعية عبر اختبارات المنصة";
         $recommendation = "متابعة الأداء الدوري عبر ألعاب المنصة للحفاظ على التطور الطبيعي.";
     } else {
         $statusText = "اشتباه (مؤشر مرتفع)";
-        $conditionText = "اشتباه بناءً على اختبار تتبع العين والتثبيت البصري";
+        $conditionText = "اشتباه بناءً على نتائج التتبع والتثبيت والتفاعل في الألعاب";
         $recommendation = "يوصى بعرض الطفل على أخصائي معتمد كأداة مساعدة في التقييم الكلينيكي.";
     }
 
-    // 4. إعداد الملف والنسخة
+    // 4. إعداد الملف وتحديد النسخة
     $stmtVer = $conn->prepare("SELECT COUNT(*) FROM diagnosis_reports WHERE child_id = :child_id");
     $stmtVer->execute([':child_id' => $child_id]);
     $count = $stmtVer->fetchColumn();
@@ -96,7 +112,7 @@ try {
 
     $fileName = $dir . "report_child_" . $child_id . "_" . time() . ".pdf";
 
-    // 5. ربط mPDF مع مجلد الخط اليدوي (fonts/Amiri-Regular.ttf)
+    // 5. تهيئة mPDF مع خط Tajawal
     $defaultConfig = (new \Mpdf\Config\ConfigVariables())->getDefaults();
     $fontDirs = $defaultConfig['fontDir'];
 
@@ -107,25 +123,24 @@ try {
         'mode' => 'utf-8',
         'format' => 'A4',
         'fontDir' => array_merge($fontDirs, [
-            __DIR__ . '/fonts', // مسار مجلد الخط الذي رفعته يدوياً
+            __DIR__ . '/fonts',
         ]),
         'fontdata' => $fontData + [
             'tajawal' => [
-                'R' => 'Tajawal-Regular.ttf', // اسم الملف اليدوي داخل مجلد fonts
-                'useOTL' => 0x00,     //otl إعادة تعطيل 
-               
+                'R' => 'Tajawal-Regular.ttf',
+                'useOTL' => 0x00,
             ]
         ],
         'default_font' => 'tajawal',
-        'autoScriptToLang' => true, // تفعيل التحديد التلقائي للغة العربية
-        'autoLangToFont' => true,   // تحويل الخط تلقائياً وفقاً للغة
+        'autoScriptToLang' => true,
+        'autoLangToFont' => true,
         'margin_left' => 15,
         'margin_right' => 15,
         'margin_top' => 15,
         'margin_bottom' => 15,
     ]);
 
-    // محتوى التقرير بصيغة HTML
+    // محتوى التقرير
     $html = '
     <div dir="rtl" style="font-family: tajawal; text-align: right; direction: rtl; unicode-bidi: embed;">
         <h2 style="text-align: center; margin-bottom: 5px;">منصة بصيرة - تقرير التقييم البصري والنمائي</h2>
@@ -161,8 +176,8 @@ try {
         <h3 style="color: #2c3e50; font-size: 14px; margin-top: 15px; margin-bottom: 5px;">3. نتائج التقييم (' . htmlspecialchars($evaluationType) . ')</h3>
         <table width="100%" cellpadding="6" cellspacing="0" border="1" style="border-collapse: collapse; font-size: 12px; border-color: #ddd;">
             <tr>
-                <td width="50%"><strong>النتيجة:</strong> ' . $finalScore . '%</td>
-                <td width="50%"><strong>الحالة:</strong> ' . htmlspecialchars($statusText) . '</td>
+                <td width="50%"><strong>النتيجة التراكمية:</strong> ' . $finalScore . '%</td>
+                <td width="50%"><strong>الحالة التشخيصية:</strong> ' . htmlspecialchars($statusText) . '</td>
             </tr>
         </table>
 
@@ -174,7 +189,7 @@ try {
         </div>
 
         <p style="font-size: 9px; color: #777; margin-top: 25px; line-height: 1.4;">
-            ملاحظة: تم إنشاء هذا التقرير تلقائياً بناءً على تحليل حركة العين والتثبيت البصري أثناء ألعاب المنصة. يرجى استخدام هذه النتائج كأداة مساعدة للتقييم الإكلينيكي لدى المختصين.
+            ملاحظة: تم إنشاء هذا التقرير تلقائياً بناءً على تحليل الأداء البصري والنمائي أثناء ألعاب المنصة. يرجى استخدام هذه النتائج كأداة مساعدة للتقييم الإكلينيكي لدى المختصين.
         </p>
     </div>
     ';
@@ -182,7 +197,7 @@ try {
     $mpdf->WriteHTML($html);
     $mpdf->Output($fileName, 'F');
 
-    // 6. حفظ السجل في قاعدة البيانات
+    // 6. حفظ التقرير في قاعدة البيانات
     $stmtInsert = $conn->prepare("
         INSERT INTO diagnosis_reports (child_id, file_title, file_path, version, moyenne_score, created_at)
         VALUES (:child_id, :file_title, :file_path, :version, :moyenne_score, NOW())
@@ -197,7 +212,7 @@ try {
 
     echo json_encode([
         "status" => "success",
-        "message" => "تم إنشاء التقرير باللغة العربية بنجاح",
+        "message" => "تم إنشاء التقرير بنجاح",
         "version" => $version,
         "moyenne_score" => $finalScore,
         "file_path" => $fileName

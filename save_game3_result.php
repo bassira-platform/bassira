@@ -1,8 +1,4 @@
 <?php
-// إظهار الأخطاء للتشخيص (مؤقتاً)
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
 header("Access-Control-Allow-Origin: *");
 header("Content-Type: application/json; charset=UTF-8");
 
@@ -20,27 +16,41 @@ try {
 
     $child_id = isset($input['child_id']) ? intval($input['child_id']) : 0;
     $score = isset($input['score']) ? floatval($input['score']) : 0.0;
+    $details = isset($input['details']) ? json_encode($input['details'], JSON_UNESCAPED_UNICODE) : null;
 
     if ($child_id <= 0) {
         echo json_encode(["status" => "error", "message" => "معرف الطفل غير صالح"]);
         exit();
     }
 
-   $game_id = 2; 
+    $game_id = 2; // معرف اللعبة الثالثة في جدول games_and_tests
 
-    $stmt = $conn->prepare("
+    // 1. الحفظ في الجدول الرئيسي لتضمينه تلقائياً في حساب التقرير الـ PDF
+    $stmt1 = $conn->prepare("
         INSERT INTO game_results (child_id, game_id, social_preference_score, created_at)
         VALUES (:child_id, :game_id, :score, NOW())
     ");
-    $stmt->execute([
+    $stmt1->execute([
         ':child_id' => $child_id,
         ':game_id'  => $game_id,
         ':score'    => $score
     ]);
 
+    // 2. الحفظ في جدول اللعبة الثالثة المخصص للتفاصيل
+    $stmt2 = $conn->prepare("
+        INSERT INTO game3_results (child_id, game_id, score, details_json, created_at)
+        VALUES (:child_id, :game_id, :score, :details_json, NOW())
+    ");
+    $stmt2->execute([
+        ':child_id'     => $child_id,
+        ':game_id'      => $game_id,
+        ':score'        => $score,
+        ':details_json' => $details
+    ]);
+
     echo json_encode([
         "status" => "success",
-        "message" => "تم حفظ نتيجة اللعبة الثالثة بنجاح",
+        "message" => "تم حفظ نتيجة اللعبة الثالثة وتضمينها في التقرير بنجاح",
         "child_id" => $child_id,
         "score" => $score
     ]);
