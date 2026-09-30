@@ -1,0 +1,115 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    direction: rtl;
+}
+
+.game-container {
+    background: #ffffff;
+    border-radius: 20px;
+    padding: 25px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+    width: 100%;
+    max-width: 650px;
+    text-align: center;
+}
+
+.game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.info-box {
+    font-weight: bold;
+    color: #4a4a4a;
+    background: #f0f3f8;
+    padding: 8px 15px;
+    border-radius: 12px;
+}
+
+.progress-bar-container {
+    flex-grow: 1;
+    height: 12px;
+    background: #e0e0e0;
+    border-radius: 10px;
+    margin: 0 15px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    width: 0%;
+    height: 100%;
+    background: #4caf50;
+    transition: width 0.3s ease;
+}
+
+.target-display {
+    font-size: 90px;
+    font-weight: bold;
+    color: #2c3e50;
+    background: #f8f9fa;
+    border: 3px dashed #8ec5fc;
+    border-radius: 20px;
+    margin: 20px 0;
+    padding: 20px;
+}
+
+.options-container {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.option-btn {
+    font-size: 32px;
+    font-weight: bold;
+    padding: 15px 30px;
+    border: none;
+    background: #6c5ce7;
+    color: white;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s;
+}
+
+.option-btn:hover {
+    transform: scale(1.08);
+    background: #5b4bc4;
+}
+
+.mic-btn {
+    background: #ff7675;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    font-size: 18px;
+    border-radius: 30px;
+    cursor: pointer;
+}
+
+.mic-btn.listening {
+    background: #d63031;
+    animation: pulse 1.2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.speech-feedback {
+    font-size: 14px;
+    color: #777;
+    margin-top: 8px;
+}

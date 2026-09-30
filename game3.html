@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>منصة بصيرة - رحلة الحروف (اللعبة الثالثة)</title>
+    <link rel="stylesheet" href="game3.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+
+<div class="game-container">
+    <!-- شريط التقدم والمعلومات -->
+    <div class="game-header">
+        <div class="info-box"><i class="fas fa-child"></i> الطفل: <span id="displayChildId">--</span></div>
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="info-box"><i class="fas fa-star"></i> النقاط: <span id="scoreText">0</span></div>
+    </div>
+
+    <!-- منطقة عرض التحدي -->
+    <div class="stage-card" id="stageCard">
+        <h2 id="instructionText">اضغط على الحرف الصحيح أو انطقه عبر الميكروفون!</h2>
+        
+        <div class="target-display" id="targetDisplay">
+            <span id="targetLetter">أ</span>
+        </div>
+
+        <!-- خيارات الإجابة باللمس أو النقر -->
+        <div class="options-container" id="optionsContainer">
+            <!-- يتم توليد الأزرار من كود JS -->
+        </div>
+
+        <!-- زر التفاعل الصوتي -->
+        <div class="speech-control">
+            <button id="micBtn" class="mic-btn" onclick="toggleSpeechRecognition()">
+                <i class="fas fa-microphone"></i> انطق الحرف
+            </button>
+            <p id="speechFeedback" class="speech-feedback">في انتظار صوتك...</p>
+        </div>
+    </div>
+</div>
+
+<!-- استدعاء ملفات السكريبت من مجلد js الرئيسي -->
+<script src="game3_storage.js"></script>
+<script src="game3_engine.js"></script>
+</body>
+</html>
