@@ -26,13 +26,16 @@ try {
         exit();
     }
 
+   $game_id = 2; 
+
     $stmt = $conn->prepare("
-        INSERT INTO game_results (child_id, social_preference_score, created_at)
-        VALUES (:child_id, :score, NOW())
+        INSERT INTO game_results (child_id, game_id, social_preference_score, created_at)
+        VALUES (:child_id, :game_id, :score, NOW())
     ");
     $stmt->execute([
         ':child_id' => $child_id,
-        ':score' => $score
+        ':game_id'  => $game_id,
+        ':score'    => $score
     ]);
 
     echo json_encode([
